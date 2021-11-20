@@ -115,7 +115,7 @@ echo 'export XDG_STATE_HOME="$HOME/.local/state"' >> /etc/profile
 echo "QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
 echo "GTK_THEME='[THEME NAME HERE]'" >> /etc/environment
 echo "EDITOR='nvim'" >> /etc/environment
-echo "VISUAL=''" >> /etc/environment
+echo "VISUAL='emacsclient -c'" >> /etc/environment
 
 echo "========= Configuring ZSH ========="
 #Place zsh files in /etc/zsh folder for system-wide use
@@ -131,7 +131,6 @@ cp ./zshrc_min /etc/skel/.config/zsh/.zshrc
 echo "In order to use zshrc configuration, don't forget to install Zplug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
 
 echo "========= Configuring Neovim ========="
-mkdir /etc/skel/.config/
 mkdir /etc/skel/.config/nvim
 cp ./init.vim /etc/skel/.config/nvim/init.vim.pending
 cp ./init_min.vim /etc/skel/.config/nvim/init.vim
@@ -139,6 +138,13 @@ cp ./plugins.vim /etc/skel/.config/nvim/plugins.vim
 ~/.config/nvim/init.vim
 echo "In order to use zshrc configuration, don't forget to install Nvim Plug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
 
+
+echo "========= Configuring Neofetch ========="
+mkdir /etc/skel/.config/neofetch
+cp ./config.conf /etc/skel/.config/neofetch/config.conf
+
+echo "========= Configuring sudoers ========="
+sudo sed --in-place 's/^#\s*\(%wheel\s\+ALL=(ALL)\s\+NOPASSWD:\s\+ALL\)/\1/' /etc/sudoers
 
 #Additional User Prompt
 while [[ "yes" == $(ask_yes_or_no "Would you like to add any additional users?") ]]; do addUserPass; done
@@ -201,6 +207,11 @@ if [[ "yes" == $(ask_yes_or_no "Are you installing on a laptop?") ]]; then
     laptop_mode="yes"
     pacman -S acpi acpi_call tlp
     systemctl enable tlp
+
+    if [[ "yes" == $(ask_yes_or_no "Does your laptop have touchscreen capability?")  ]]; then
+        echo "========= Installing Wacom settings ========="
+        pacman -S libwacom xf86-input-wacom
+    fi
 fi
 
 
@@ -412,5 +423,5 @@ if [ "$use_crypt" = "yes" ]; then
 fi
 
 echo "Put these in HOOKS: resume ${extra_hooks}" >> /etc/mkinitcpio.conf
-
+echo "Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
 printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done. After verification, type exit, umount -a and reboot.\e[0m"
