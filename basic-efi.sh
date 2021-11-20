@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
 
+#Enable logging!
+touch ./logs.txt
+exec &> >(tee ./logs.txt)
+
 # Variable declarations
 users=()
-gpu=""
 use_lvm=""
 use_btrfs=""
 use_crypt=""
 use_bluetooth=""
 use_swap=""
 microcode=""
-laptop_mode=""
 
 #Functions
 function ask_yes_or_no() {
     read -p "$1 ([y]es or [N]o): "
     case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
-        y|yes) echo "yes" ;;
-        *)     echo "no" ;;
+    y|yes) echo "yes" ;;
+    *)     echo "no" ;;
     esac
 }
 
@@ -26,6 +28,9 @@ addRootPass(){
         echo
         read -s -p "Enter the password (again): " password2
         echo
+        if [[ "$password" = "" ]] && [[ "yes" == $(ask_yes_or_no "!!!!!!!THIS IS AN EXTREME SECURITY RISK AS ANYONE CAN AND WILL MODIFY YOUR SYSTEM AT ANY TIME!!!!!!! Do you accept the consequences??")  ]]; then
+            if [[ "yes" == $(ask_yes_or_no "Are you REALLY sure? !!!!!IT IS HIGHLY RECOMMENDED NOT TO DO THIS FOR THE ROOT USER!!!!!") ]]; then break; fi
+        fi
         [ "$password" = "$password2" ] && break
         echo "Please try again"
     done
@@ -42,7 +47,7 @@ addUserPass(){
             echo
             read -s -p "Enter the password (again): " password2
             echo
-            if [[ "$password" = "" ]] && [[ "yes" == $(ask_yes_or_no "Are you sure you want to leave the password blank? This is a security risk and allows anyone to get into your machine!")  ]]; then
+            if [[ "$password" = "" ]] && [[ "yes" == $(ask_yes_or_no "!!!!!This is a security risk and allows anyone to get into your machine!!!!!! Do you accept the consequences?")  ]]; then
                 if [[ "yes" == $(ask_yes_or_no "Are you REALLY sure?") ]]; then break; fi
             fi
             [ "$password" = "$password2" ] && break
@@ -88,14 +93,14 @@ echo "::1       localhost" >> /etc/hosts
 addRootPass
 
 echo "========= Installing Base packages and wireless modules ========="
-pacman -S --needed base base-devel linux linux-firmware git gnupg zsh networkmanager network-manager-applet networkmanager-openvpn dialog wpa_supplicant wireless_tools netctl inetutils openssh openvpn openssh-askpass
+pacman -S --noconfirm --needed base base-devel linux linux-firmware git gnupg zsh networkmanager network-manager-applet networkmanager-openvpn dialog wpa_supplicant wireless_tools netctl inetutils openssh openvpn openssh-askpass
 pacman -U yay-bin-11.0.2-1-x86_64.pkg.tar.zst
 systemctl enable NetworkManager
 systemctl enable sshd
 
 
 echo "========= Installing Filesystem packages ========="
-pacman -S --needed ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar
+pacman -S --noconfirm --needed ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar
 
 
 echo "========= Installing Extra packages ========= "
@@ -103,7 +108,7 @@ pacman -S git neovim emacs yadm neofetch
 
 
 echo "========= Installing User directories and updating ========="
-pacman -S xdg-user-dirs xdg-utils
+pacman -S --noconfirm xdg-user-dirs xdg-utils
 xdg-user-dirs-update
 echo "Configuring environment variables"
 echo >> /etc/profile
@@ -115,7 +120,7 @@ echo 'export XDG_STATE_HOME="$HOME/.local/state"' >> /etc/profile
 echo "QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
 echo "GTK_THEME='[THEME NAME HERE]'" >> /etc/environment
 echo "EDITOR='nvim'" >> /etc/environment
-echo "VISUAL='emacsclient -c'" >> /etc/environment
+echo "VISUAL='nvim'" >> /etc/environment
 
 echo "========= Configuring ZSH ========="
 #Place zsh files in /etc/zsh folder for system-wide use
@@ -128,15 +133,14 @@ mkdir /etc/skel/.config
 mkdir /etc/skel/.config/zsh
 cp ./zshrc /etc/skel/.config/zsh/.zshrc.pending
 cp ./zshrc_min /etc/skel/.config/zsh/.zshrc
-echo "In order to use zshrc configuration, don't forget to install Zplug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
+echo "IMPORTANT: In order to use zshrc configuration, don't forget to install Zplug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
 
 echo "========= Configuring Neovim ========="
 mkdir /etc/skel/.config/nvim
 cp ./init.vim /etc/skel/.config/nvim/init.vim.pending
 cp ./init_min.vim /etc/skel/.config/nvim/init.vim
 cp ./plugins.vim /etc/skel/.config/nvim/plugins.vim
-~/.config/nvim/init.vim
-echo "In order to use zshrc configuration, don't forget to install Nvim Plug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
+echo "IMPORTTANT: In order to use init.vim configuration, don't forget to install Nvim Plug! It will remain as /etc/nvim/init.vim.pending and HOME/.config/nvim/init.vim.pending"
 
 
 echo "========= Configuring Neofetch ========="
@@ -161,20 +165,20 @@ fi
 
 
 echo "========= Installing ALSA and Audio protocols ========="
-pacman -S alsa-utils pulseaudio gst-libav gst-plugins-ugly gst-plugins-bad pulseaudio-alsa pipewire-alsa
+pacman -S --noconfirm alsa-utils pulseaudio gst-libav gst-plugins-ugly gst-plugins-bad pulseaudio-alsa pipewire-alsa
 
 
 if [[ "yes" == $(ask_yes_or_no "Would you like to download and enable Bluetooth?") ]]; then
     echo "========= Installing Bluetooth ========="
     use_bluetooth="yes"
-    pacman -S bluez bluez-utils
+    pacman -S --noconfirm bluez bluez-utils
     systemctl enable bluetooth pulseaudio-bluetooth
-    fi
+fi
 
 
 if [[ "yes" == $(ask_yes_or_no "Would you like to install HP Printer Modules?") ]]; then
     echo "========= Installing HP modules ========="
-    pacman -S cups cups-filters hplip
+    pacman -S --noconfirm cups cups-filters hplip
     systemctl enable cups
 fi
 
@@ -184,7 +188,7 @@ if [[ "yes" == $(ask_yes_or_no "Would you like to install Virt-Manager?") ]]; th
     echo "========= Installing Virt-Manager, Qemu and other required packages ========="
     echo "Note: The package iptables-nft will conflict with iptables, please allow iptables-nft to install in order to use Virt-Manager's virutal ethernet feature."
     sleep 5
-    pacman -S qemu libvirt iptables-nft dnsmasq virt-manager virt-viewer bridge-utils dmidecode
+    pacman -S qemu libvirt iptables-nft dnsmasq virt-manager virt-viewer bridge-utils dmidecode edk2-ovmf
     systemctl enable libvirtd
     echo "====== Configuring KVM ======"
     sed -i '/unix_sock_group/s/^#//g' /etc/libvirt/libvirtd.conf
@@ -204,13 +208,12 @@ fi
 
 if [[ "yes" == $(ask_yes_or_no "Are you installing on a laptop?") ]]; then
     echo "========= Installing TLP and other battery management tools ========="
-    laptop_mode="yes"
-    pacman -S acpi acpi_call tlp
+    pacman -S --noconfirm acpi acpi_call tlp tlpui
     systemctl enable tlp
 
     if [[ "yes" == $(ask_yes_or_no "Does your laptop have touchscreen capability?")  ]]; then
         echo "========= Installing Wacom settings ========="
-        pacman -S libwacom xf86-input-wacom
+        pacman -S --noconfirm libwacom xf86-input-wacom
     fi
 fi
 
@@ -221,7 +224,7 @@ if [[ "yes" == $(ask_yes_or_no "Did you use BTRFS for the file system?") ]]; the
 if [[ "yes" == $(ask_yes_or_no "Did you use LVM for the file system?") ]]; then
     echo "========= Installing LVM related packages ========="
     use_lvm="yes"
-    pacman -S lvm2
+    pacman -S --noconfirm lvm2
 fi
 
 
@@ -237,12 +240,12 @@ while true; do
     I | i)
         echo "========= Installing Intel Microcode ========="
         microcode="intel"
-        pacman -S intel-ucode
+        pacman -S --noconfirm intel-ucode
         break;;
     A | a)
         echo "========= Installing AMD Microcode ========="
         microcode="amd"
-        pacman -S amd-ucode
+        pacman -S --noconfirm amd-ucode
         break;;
     *) echo "Invalid input";;
     esac
@@ -255,107 +258,80 @@ while true; do
     case $graphics in
     I | i)
         echo "========= Installing Intel Graphics ========="
-        gpu="intel"
-        pacman -S xf86-video-intel mesa
+        pacman -S --noconfirm xf86-video-intel mesa vulkan-driver vulkan-intel lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools
         break;;
     A | a)
         echo "========= Installing AMD Graphics ========="
-        gpu="amd"
-        pacman -S xf86-video-amdgpu mesa
+        pacman -S --noconfirm xf86-video-amdgpu mesa vulkan-driver vulkan-tools i2c-tools
+        while true; do
+            read -p "Are you using a [A]MD GPU or a [R]eadon GPU? " subgpu
+            case $subgpu in
+            A | a)
+                pacman -S --noconfirm amdvlk lib32-amdvlk
+                break;;
+            R | r)
+                pacman -S --noconfirm vulkan-radeon lib32-vulkan-radeon
+                break;;
+            *) echo "Invaild Input";;
+            esac
+        done
         break;;
     N | n)
         echo "========= Installing Nvidia Graphics ========="
-        gpu="nvidia"
-        pacman -S nvidia nvidia-utils
+        pacman -S --noconfirm nvidia nvidia-utils nvidia-settings vulkan-driver lib32-nvidia-utils vulkan-tools i2c-tools
         break;;
     *) echo "Invalid input" ;;
     esac
 done
 
 
-#Graphical install
-if [[ "yes" == $(ask_yes_or_no "Would you like to install a desktop environment?") ]]; then
-    #Install Nvidia Settings tool if Nvidia was chosen for the GPU
-    if [ "$gpu" = "nvidia" ]; then
-        echo "Installing Nvidia Video settings and libiaries for Steam"
-        pacman -S --noconfirm nvidia-settings vulkan-driver lib32-nvidia-utils vulkan-tools i2c-tools
-    fi
+echo "====== Installing font packs ======"
+pacman -S --noconfirm dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation ttf-linux-libertine noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji
 
-    if [ "$gpu" = "intel" ]; then
-        echo "Installing Intel libaries for Steam"
-        pacman -S --noconfirm vulkan-driver vulkan-intel lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools
-    fi
-
-    if [ "$gpu" = "amd" ]; then
-        echo "Installing AMD libaries for Steam"
-        pacman -S --noconfirm vulkan-driver vulkan-tools i2c-tools
-        while true; do
-            read -p "Are you using a [A]MD GPU or a [R]eadon GPU? " subgpu
-            case $subgpu in
-            A | a)
-                pacman -S amdvlk lib32-amdvlk
-                break;;
-            R | r)
-                pacman -S vulkan-radeon lib32-vulkan-radeon
-                break;;
-            *) echo "Invaild Input";;
-            esac
-        done
-    fi
-
-    if [ "$laptop_mode" = "yes" ]; then
-        echo "Installing Specific UI for laptop"
-        pacman -S --noconfirm tlpui
-    fi
-
-    echo "Installing font packs"
-    pacman -S dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation ttf-linux-libertine noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji
-
-    #DE Selector
-    while true; do
-        echo "What desktop environment do you want to install?"
-        read -p "[X]fce, [G]nome, [K]DE, or [C]innamon? " de
-        case $de in
-            X | x) # XFCE
-                echo "Installing XFCE and basic desktop apps"
-                pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller geeqie libreoffice-fresh xournalpp xclip syncthing discord catfish isync xreader simple-scan gparted octave pavucontrol gtop qalculate-gtk pcmanfm-gtk deluge-gtk
-                systemctl enable lightdm
-                pacman -R ristretto
-                if [ "$use_bluetooth" = "yes" ]; then
-                    echo "Installing GUI for bluetooth"
-                    pacman -S blueman
-                fi
-                break;;
-            G | g) # Gnome
-                echo "Installing Gnome and basic desktop apps"
-                pacman -S --noconfirm xorg gdm gnome gnome-extra firefox gnome-tweaks simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller libreoffice-fresh syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk transmission
-                systemctl enable gdm
-                if [ "$use_bluetooth" = "yes" ]; then
-                    echo "Installing GUI for bluetooth"
-                    pacman -S blueman
-                fi
-                break;;
-            K | k) # KDE
-                echo "Installing KDE and basic desktop apps"
-                pacman -S --noconfirm xorg sddm plasma kde-applications firefox simplescreenrecorder papirus-icon-theme ksshaskpass libreoffice-fresh syncthing discord isync simple-scan octave pavucontrol-qt gtop qalculate-qt qbittorrent
-                systemctl enable sddm
-                if [ "$use_bluetooth" = "yes" ]; then
-                    echo "Installing GUI for bluetooth"
-                    pacman -S bluedevil
-                fi
-                break;;
-            C | c) #Cinnamon
-                echo "Installing Cinnamon and basic desktop apps"
-                pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme gnome-shell x11-ssh-askpass libreoffice-fresh file-roller nemo-fileroller syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk deluge-gtk
-                if [ "$use_bluetooth" = "yes" ]; then
-                    echo "Installing GUI for bluetooth"
-                    pacman -S blueman
-                fi
-                break;;
-            *) echo "Invalid input" ;;
-         esac
-    done
-fi
+#DE Install
+while true; do
+    echo "What desktop environment do you want to install?"
+    read -p "[X]fce, [G]nome, [K]DE, or [C]innamon? " de
+    case $de in
+    X | x) # XFCE
+        echo "Installing XFCE and basic desktop apps"
+        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller geeqie libreoffice-fresh xournalpp xclip syncthing discord catfish isync xreader simple-scan gparted octave pavucontrol gtop qalculate-gtk pcmanfm-gtk3 deluge-gtk
+        systemctl enable lightdm
+        pacman -R --noconfirm ristretto
+        if [ "$use_bluetooth" = "yes" ]; then
+            echo "Installing GUI for bluetooth"
+            pacman -S --noconfirm blueman
+        fi
+        break;;
+    G | g) # Gnome
+        echo "Installing Gnome and basic desktop apps"
+        pacman -S --noconfirm xorg gdm gnome gnome-extra firefox gnome-tweaks simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller libreoffice-fresh syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk transmission
+        systemctl enable gdm
+        if [ "$use_bluetooth" = "yes" ]; then
+            echo "Installing GUI for bluetooth"
+            pacman -S --noconfirm blueman
+        fi
+        break;;
+    K | k) # KDE
+        echo "Installing KDE and basic desktop apps"
+        pacman -S --noconfirm xorg sddm plasma kde-applications firefox simplescreenrecorder papirus-icon-theme ksshaskpass libreoffice-fresh syncthing discord isync simple-scan octave pavucontrol-qt gtop qalculate-qt qbittorrent
+        systemctl enable sddm
+        if [ "$use_bluetooth" = "yes" ]; then
+            echo "Installing GUI for bluetooth"
+            pacman -S --noconfirm bluedevil
+        fi
+        break;;
+    C | c) #Cinnamon
+        echo "Installing Cinnamon and basic desktop apps"
+        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme gnome-shell x11-ssh-askpass libreoffice-fresh file-roller nemo-fileroller syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk deluge-gtk
+        if [ "$use_bluetooth" = "yes" ]; then
+            echo "Installing GUI for bluetooth"
+            pacman -S --noconfirm blueman
+        fi
+        break;;
+    *) echo "Invalid input" ;;
+    esac
+done
 
 #Systemd-boot or Grub Selector
 while true; do
@@ -401,7 +377,7 @@ while true; do
     G | g)
         echo "========= Installing GRUB ========="
         echo "This doesn't do anything yet!";;
-        #break;;
+    #break;;
     *) echo "Invalid input" ;;
     esac
 done
@@ -409,19 +385,19 @@ done
 echo "========= Configuring mkinitcpio ========"
 extra_hooks=""
 
+if [ "$use_swap" = "yes" ]; then extra_hooks="resume ${extra_hooks}"; fi
+
 if [ "$use_btrfs" = "yes" ]; then
     extra_hooks="btrfs ${extra_hooks}"
     sed -i '57s/.//' /etc/mkinitcpio.conf
 fi
 
-if [ "$use_lvm" = "yes" ]; then
-    extra_hooks="lvm ${extra_hooks}"
-fi
+if [ "$use_lvm" = "yes" ]; then extra_hooks="lvm ${extra_hooks}"; fi
 
-if [ "$use_crypt" = "yes" ]; then
-    extra_hooks="encrypt ${extra_hooks}"
-fi
+if [ "$use_crypt" = "yes" ]; then extra_hooks="encrypt ${extra_hooks}"; fi
 
-echo "Put these in HOOKS: resume ${extra_hooks}" >> /etc/mkinitcpio.conf
-echo "Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
-printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done. After verification, type exit, umount -a and reboot.\e[0m"
+
+echo "Put these in HOOKS: ${extra_hooks}" >> /etc/mkinitcpio.conf
+echo "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'lvm' goes after 'filesystems', 'btrfs' goes after 'lvm', and finally, 'resume' goes at the very end of the paramter list"
+echo "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
+printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done, check logs.txt and find the 'IMPORTANT' tags in the logs, they tell you important things you need to do next before rebooting. After verification, type exit, umount -a and reboot.\e[0m"
