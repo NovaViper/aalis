@@ -1,4 +1,4 @@
-# ArchLinux Install Script
+# AALIS -- Advanced ArchLinux Install Script
 
 This script helps me personally install ArchLinux along with most of the packages I use/need for my systems. This script makes several assumptions, based on my needs and on what hardware I have on my system (such as use of swapfile, partition path names what kernel packages are installed). This can be useful for other systems but be aware that your system might require different packages (especially for things like the bootloader); you are free to modify the script to fit your system as needed!
 
@@ -25,6 +25,8 @@ This script helps me personally install ArchLinux along with most of the package
 - Support anything that isn't swapfiles.
 - Configure partitions, you should have already done this prior to getting into chroot!
 - Enable Emacs client systemd user script, since Emacs systemd requires you to run it on a user account, the script obviously cannot enable it in this phase, you will have to enable it after you reboot.
+- Configure DE theme. The theme I use, (Dracula)[https://draculatheme.com/] is only available on the AUR, which cannot be installed from chroot.
+- Configure other packages and desktop environment settings. Also is complicated to setup while in chroot, but mainly unsure what folders need to be changed. Might get around to add this feature if it's possible 
 
 ## How to run this script
 - Simply clone the entire repo onto your computer using `git clone https://gitlab.com/NovaViper/archlinux-install-script/`

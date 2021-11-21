@@ -118,29 +118,25 @@ echo 'export XDG_DATA_HOME="$HOME/.local/share"' >> /etc/profile
 echo 'export XDG_STATE_HOME="$HOME/.local/state"' >> /etc/profile
 
 echo "QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
-echo "GTK_THEME='[THEME NAME HERE]'" >> /etc/environment
-echo "EDITOR='nvim'" >> /etc/environment
-echo "VISUAL='nvim'" >> /etc/environment
+echo "GTK_THEME='Ant-Dracula'" >> /etc/environment
 
 echo "========= Configuring ZSH ========="
 #Place zsh files in /etc/zsh folder for system-wide use
 cp ./zshenv /etc/zsh/zshenv
-cp ./zshrc_min /etc/zsh/zshrc
-cp ./zshrc /etc/zsh/zshrc.pending
 
 #Place zshrc files in skel folder so users can get them
 mkdir /etc/skel/.config
 mkdir /etc/skel/.config/zsh
 cp ./zshrc /etc/skel/.config/zsh/.zshrc.pending
 cp ./zshrc_min /etc/skel/.config/zsh/.zshrc
-echo "IMPORTANT: In order to use zshrc configuration, don't forget to install Zplug! It will remain as /etc/zsh/zshrc.pending and HOME/.config/zsh/.zshrc.pending"
+echo "IMPORTANT: In order to use zshrc configuration, don't forget to install Zplug! It will remain as user_home/.config/zsh/.zshrc.pending"
 
 echo "========= Configuring Neovim ========="
 mkdir /etc/skel/.config/nvim
 cp ./init.vim /etc/skel/.config/nvim/init.vim.pending
 cp ./init_min.vim /etc/skel/.config/nvim/init.vim
 cp ./plugins.vim /etc/skel/.config/nvim/plugins.vim
-echo "IMPORTTANT: In order to use init.vim configuration, don't forget to install Nvim Plug! It will remain as /etc/nvim/init.vim.pending and HOME/.config/nvim/init.vim.pending"
+echo "IMPORTANT: In order to use init.vim configuration, don't forget to install Nvim Plug! It will remain as /etc/nvim/init.vim.pending and HOME/.config/nvim/init.vim.pending"
 
 
 echo "========= Configuring Neofetch ========="
@@ -295,7 +291,7 @@ while true; do
     case $de in
     X | x) # XFCE
         echo "Installing XFCE and basic desktop apps"
-        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller geeqie libreoffice-fresh xournalpp xclip syncthing discord catfish isync xreader simple-scan gparted octave pavucontrol gtop qalculate-gtk pcmanfm-gtk3 deluge-gtk
+        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller geeqie libreoffice-fresh xournalpp xclip copyq syncthing discord catfish isync xreader simple-scan gparted octave pavucontrol gtop qalculate-gtk deluge-gtk baobab nemo nemo-fileroller nemo-preview nemo-seahorse nemo-share nemo-terminal appmenu-gtk-module
         systemctl enable lightdm
         pacman -R --noconfirm ristretto
         if [ "$use_bluetooth" = "yes" ]; then
@@ -305,7 +301,7 @@ while true; do
         break;;
     G | g) # Gnome
         echo "Installing Gnome and basic desktop apps"
-        pacman -S --noconfirm xorg gdm gnome gnome-extra firefox gnome-tweaks simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller libreoffice-fresh syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk transmission
+        pacman -S --noconfirm xorg gdm gnome gnome-extra firefox gnome-tweaks simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme vlc x11-ssh-askpass file-roller libreoffice-fresh syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk transmission baobab copyq
         systemctl enable gdm
         if [ "$use_bluetooth" = "yes" ]; then
             echo "Installing GUI for bluetooth"
@@ -314,7 +310,7 @@ while true; do
         break;;
     K | k) # KDE
         echo "Installing KDE and basic desktop apps"
-        pacman -S --noconfirm xorg sddm plasma kde-applications firefox simplescreenrecorder papirus-icon-theme ksshaskpass libreoffice-fresh syncthing discord isync simple-scan octave pavucontrol-qt gtop qalculate-qt qbittorrent
+        pacman -S --noconfirm xorg sddm plasma kde-applications firefox simplescreenrecorder papirus-icon-theme ksshaskpass libreoffice-fresh syncthing discord isync simple-scan octave pavucontrol-qt gtop qalculate-qt qbittorrent filelight copyq
         systemctl enable sddm
         if [ "$use_bluetooth" = "yes" ]; then
             echo "Installing GUI for bluetooth"
@@ -323,7 +319,7 @@ while true; do
         break;;
     C | c) #Cinnamon
         echo "Installing Cinnamon and basic desktop apps"
-        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme gnome-shell x11-ssh-askpass libreoffice-fresh file-roller nemo-fileroller syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk deluge-gtk
+        pacman -S --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon firefox simplescreenrecorder arc-gtk-theme arc-icon-theme papirus-icon-theme gnome-shell x11-ssh-askpass libreoffice-fresh file-roller nemo-fileroller syncthing discord isync simple-scan gparted octave pavucontrol gtop qalculate-gtk deluge-gtk baobab copyq
         if [ "$use_bluetooth" = "yes" ]; then
             echo "Installing GUI for bluetooth"
             pacman -S --noconfirm blueman
@@ -396,8 +392,9 @@ if [ "$use_lvm" = "yes" ]; then extra_hooks="lvm ${extra_hooks}"; fi
 
 if [ "$use_crypt" = "yes" ]; then extra_hooks="encrypt ${extra_hooks}"; fi
 
-
-echo "Put these in HOOKS: ${extra_hooks}" >> /etc/mkinitcpio.conf
-echo "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'lvm' goes after 'filesystems', 'btrfs' goes after 'lvm', and finally, 'resume' goes at the very end of the paramter list"
-echo "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
+if [[ "${extra_hooks}" ]]; then
+    echo "Put these in HOOKS: ${extra_hooks}" >> /etc/mkinitcpio.conf
+    echo "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
+    echo "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'lvm' goes after 'filesystems', 'btrfs' goes after 'lvm', and finally, 'resume' goes at the very end of the paramter list"
+fi
 printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done, check logs.txt and find the 'IMPORTANT' tags in the logs, they tell you important things you need to do next before rebooting. After verification, type exit, umount -a and reboot.\e[0m"

@@ -6,6 +6,8 @@
 ###
 termcol="$(tput colors)"
 source /usr/share/zsh/scripts/zplug/init.zsh
+export EDITOR='emacsclient -t'
+export VISUAL='emacsclient -c'
 
 ###
 # Zplug initalization
