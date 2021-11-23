@@ -204,7 +204,7 @@ fi
 
 if [[ "yes" == $(ask_yes_or_no "Are you installing on a laptop?") ]]; then
     echo "========= Installing TLP and other battery management tools ========="
-    pacman -S --noconfirm acpi acpi_call tlp tlpui
+    pacman -S --noconfirm acpi acpi_call tlp
     systemctl enable tlp
 
     if [[ "yes" == $(ask_yes_or_no "Does your laptop have touchscreen capability?")  ]]; then
@@ -227,7 +227,7 @@ fi
 if [[ "yes" == $(ask_yes_or_no "Did you use LUKS disk encryption?") ]]; then use_crypt="yes"; fi
 
 
-if [[ "yes" == $(ask_yes_or_no "Did you make a swap partition?") ]]; then use_swap="yes"; fi
+if [[ "yes" == $(ask_yes_or_no "Do you want to use SWAP on your system?") ]]; then use_swap="yes"; fi
 
 #Processor Microcode Installer
 while true; do
