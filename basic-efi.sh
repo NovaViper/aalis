@@ -103,11 +103,11 @@ systemctl enable sshd
 
 
 echo "========= Installing Filesystem packages ========="
-pacman -S --needed --noconfirm ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar
+pacman -S --needed --noconfirm ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar p7zip unarchiver
 
 
 echo "========= Installing Extra packages ========= "
-pacman -S --needed git neovim yadm neofetch
+pacman -S --needed git neovim yadm
 
 echo "========= Installing User directories and updating ========="
 pacman -S --needed --noconfirm xdg-user-dirs xdg-utils
@@ -142,7 +142,7 @@ mkdir /etc/skel/.config
 mkdir /etc/skel/.config/zsh
 cp ./zshrc /etc/skel/.config/zsh/.zshrc.pending
 cp ./zshrc_min /etc/skel/.config/zsh/.zshrc
-echo "IMPORTANT: In order to use zshrc configuration, don't forget to install Zplug! It will remain as user_home/.config/zsh/.zshrc.pending"
+echo "IMPORTANT: In order to use zshrc configuration, don't forget to install Zinit! It will remain as user_home/.config/zsh/.zshrc.pending"
 
 echo "========= Configuring Neovim ========="
 mkdir /etc/skel/.config/nvim
@@ -352,8 +352,7 @@ while true; do
         break;;
     K | k) # KDE
         echo "Installing KDE and basic desktop apps"
-        pacman -S --needed --noconfirm xorg sddm ksshaskpass dolphin-plugins pavucontrol-qt qalculate-qt kget filelight kde-gtk-config ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate ktorrent kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd kdeconnect
-
+        pacman -S --needed --noconfirm xorg sddm plasma kde-applications plasma-browser-integration firefox simplescreenrecorder papirus-icon-theme ksshaskpass libreoffice-fresh syncthing discord isync simple-scan octave pavucontrol-qt gtop qalculate-qt qbittorrent filelight copyq
         systemctl enable sddm
         if [ "$use_bluetooth" = "yes" ]; then
             echo "Installing GUI for bluetooth"
@@ -467,4 +466,4 @@ if [[ "${extra_hooks}" ]]; then
 fi
 echo
 echo
-printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done, check logs.txt and find the 'IMPORTANT' tags in the logs, they tell you important things you need to do next before rebooting. After verification, type exit, umount -a and reboot.\e[0m"
+printf "\e[1;32mDone! Check all modified files to ensure installation was correctly done, check logs.txt and find the 'IMPORTANT' tags in the logs, they tell you important things you need to do next before rebooting. After verification, type exit, umount -a and reboot. Then you will have to run the 'yay-packages.sh' script to under the user in order to automatically install all AUR packages.\e[0m"

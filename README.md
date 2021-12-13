@@ -14,6 +14,7 @@ This script helps me personally install ArchLinux along with most of the package
 - Saves script output in a log.txt file
 - Installs yay AUR helper
 - Installs and Configures Systemd-boot and Grub
+- Installs AUR packages (via the yay-packages.sh file) and configures some packages (working on getting things like enabling user systemd scripts)
 
 ## What it doesn't do
 - Automatically add kernel parameters for LUKS, BTRFS LVM, and SWAP for mkinicpio, it just echoes the names of the paramters into the mkinitcpio file
@@ -25,8 +26,7 @@ This script helps me personally install ArchLinux along with most of the package
 - Support anything  that isn't swapfiles.
 - Configure partitions, you should have already done this prior to getting into chroot!
 - Enable Emacs client systemd user script, since Emacs systemd requires you to run it on a user account, the script obviously cannot enable it in this phase, you will have to enable it after you reboot.
-- Configure DE theme. The theme I use, [Dracula](https://draculatheme.com/) is only available on the AUR, which cannot be installed from chroot.
-- Configure other packages and desktop environment settings. This is also complicated to setup while in chroot, but mainly unsure what folders need to be changed. Might get around to add this feature if it's possible.
+- Configure DE theme. The theme I use, (Dracula)[https://draculatheme.com/] is installed via the yay-packages script, but I haven't figured out away to automatically tell the DE to use the theme (other than using the environment variables).
 
 ## How to run this script
 - Simply clone the entire repo onto your computer using `git clone https://gitlab.com/NovaViper/archlinux-install-script/`
