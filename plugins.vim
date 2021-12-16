@@ -5,8 +5,8 @@ call plug#begin('~/.local/share/nvim/plugged')
 
 Plug 'vim-airline/vim-airline'
 
-" Plugin outside ~/.vim/plugged with post-update hook
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plug '/usr/share/fzf'
+Plug 'junegunn/fzf.vim'
 
 Plug 'tpope/vim-fugitive'
 

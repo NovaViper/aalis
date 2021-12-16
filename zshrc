@@ -28,6 +28,7 @@ zinit light "jeffreytse/zsh-vi-mode"
 zinit snippet OMZ::plugins/sudo/sudo.plugin.zsh
 zinit light "zsh-users/zsh-syntax-highlighting"
 zinit light "zsh-users/zsh-history-substring-search"
+zinit light "marlonrichert/zsh-autocomplete"
 zinit light "zsh-users/zsh-autosuggestions"
 zinit light "zsh-users/zsh-completions"
 zinit snippet OMZ::plugins/emacs/emacs.plugin.zsh
@@ -62,3 +63,9 @@ if [ $termcol != 256 ] ; then
 else
   [[ ! -f ~/.config/zsh/.p10k.zsh ]] || source ~/.config/zsh/.p10k.zsh
 fi
+
+# FZF Initalization
+source /usr/share/fzf/key-bindings.zsh
+source /usr/share/fzf/completion.zsh
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
