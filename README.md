@@ -30,7 +30,7 @@ Pronouced as "Alice". This script helps me personally install ArchLinux along wi
 ## How to run this script
 - Type the following commands in the prompt:
 ```
-pacman -Sy git
+pacman -S git
 git clone https://gitlab.com/NovaViper/aalis
 cd aalis
 ./aalis.sh

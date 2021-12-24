@@ -27,7 +27,7 @@ banner ${LIGHT_PURPLE} "Configuring Pacman"
 sed -i 's/^#Color/Color/' /etc/pacman.conf
 sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
 sed -i 's/^#Para/Para/' /etc/pacman.conf
-pacman -Syy
+pacman -Syu
 
 banner ${LIGHT_PURPLE} "Setup Language to US and set locale, and hostname"
 sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
@@ -294,6 +294,7 @@ while true; do
         output ${YELLOW} "Installing Cinnamon and basic desktop apps"
         desktopenv="cinnamon"
         pacman -S --needed --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader
+        systemctl enable lightdm
         if [ "$use_bluetooth" = "yes" ]; then
             output ${YELLOW} "Installing GUI for bluetooth"
             pacman -S --needed --noconfirm blueman
