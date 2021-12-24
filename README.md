@@ -36,5 +36,11 @@ cd aalis
 ./aalis.sh
 ```
 
+## Changelog
+See [CHANGELOG](CHANGELOG) to see how the script has changed over time
+
+## Plans?
+I have alot more planned for the script! See [PLANNED](PLANNED.md) to see what other things I have in store for the script.
+
 ## CREDIT
 - The latest of the script is based on Chris Titus' [ArchTitus installer](https://github.com/ChrisTitusTech/ArchTitus), which allowed for AUR packages to be possible to be installed as well as various new functionality.

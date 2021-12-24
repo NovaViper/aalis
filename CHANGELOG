@@ -18,7 +18,9 @@ Version 2.0.0 - commit dfa56ed7
 + Now the script can partition the disks automatically!
 + ZRAM support
 + Added FZF for ZSH
++ Added Reflector timer
 + Now can configure the partitions for either UEFI or BIOS
+* Updated mount parameters for BTRFS, which fixed the space_cache compatability in the December 2021 ArchLinux ISO
 - Removed precomplied Yay package, since now the script can install Yay directly
 - Removed minimal ZSH since now the script can install the needed plugin managers
 - Removed Neofetch package, this slowed down the ZSH prompt quite a bit
