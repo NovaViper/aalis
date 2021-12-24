@@ -1,0 +1,29 @@
+KEY:
++ = addition
+- = removal
+* = bugfix
+
+
+Version 2.0.1 - commit 3c990481
+* Fixed lightdm not being enabled for Cinnamon
++ Pacman now updates first before installing packages for the system in chroot
+
+Version 2.0.0 - commit dfa56ed7
++ Complete rewrite! Made it more like ArchTitus (which allows for AUR packages to be installed)
++ Made AUR package install possible
++ Now can auto retreive UUIDs needed for Systemdboot/GRUB LUKS encryption
++ Streamlined alot of code into script_funcs file, now the main scripts look cleaner
++ Installer questions now save options into sysconfig.conf file
++ Now it's possible to rerun the script, it goes and cleans the disk you selected before it installs again
++ Now the script can partition the disks automatically!
++ ZRAM support
++ Added FZF for ZSH
++ Now can configure the partitions for either UEFI or BIOS
+- Removed precomplied Yay package, since now the script can install Yay directly
+- Removed minimal ZSH since now the script can install the needed plugin managers
+- Removed Neofetch package, this slowed down the ZSH prompt quite a bit
+- Removed LVM support, this turned out to be alot harder to automae
+
+
+Version 1.0.0
++ Inital release
