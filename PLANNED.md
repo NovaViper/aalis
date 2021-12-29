@@ -1,6 +1,8 @@
 # Version 2.1.0
 - Add a version checker
 - Add ability to upload logs to an online repo like Pastebin with pastebinit package
+- Make installer enable PAM modules for KWallet
+- Make installer add environmental variables for gui ssh-askpass modules
 
 # Version 3.0.0
 - Add ability for users to specify their own packages
