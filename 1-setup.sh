@@ -289,6 +289,10 @@ while true; do
             output ${YELLOW} "Installing GUI for Wacom drivers"
             pacman -S --needed --noconfirm kcm-wacomtablet
         fi
+
+        output ${YELLOW} "Adding Kwallet to PAM"
+        sed -i '4s/.//' /etc/pam.d/sddm
+        sed -i '15s/.//' /etc/pam.d/sddm
         break;;
     C | c) #Cinnamon
         output ${YELLOW} "Installing Cinnamon and basic desktop apps"

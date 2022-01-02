@@ -53,15 +53,23 @@ fi
 if [[ "$desktopenv" == "xfce"  ]]; then
     output ${YELLOW} "Installing XFCE specific AUR packages"
     yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot xfce4-docklike-plugin-ng-git xfce4-windowck-plugin
+    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 elif [[ "$desktopenv" == "gnome"  ]]; then
     output ${YELLOW} "Installing Gnome specific AUR packages"
     yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot
+    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 elif [[ "$desktopenv" == "kde"  ]]; then
     output ${YELLOW} "Installing KDE specific packages"
     yay -S --noconfirm --needed ant-dracula-kde-theme-git ant-dracula-kvantum-theme-git kde-servicemenus-pdf rootactions-servicemenu plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git
+    output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
+    echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
 elif [[ "$desktopenv" == "cinnamon"  ]]; then
     output ${YELLOW} "Installing Cinnamon specific packages"
     yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot
+    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 fi
 
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"

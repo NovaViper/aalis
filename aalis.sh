@@ -3,6 +3,8 @@
 set -e
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+VERSION=2.1.0
+ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
 
 echo -ne "\e[95m"
 echo    "---------------------------------"
@@ -13,20 +15,19 @@ if [ -f ${SCRIPT_DIR}/script_funcs ]; then source ${SCRIPT_DIR}/script_funcs; ou
 output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
-banner ${LIGHT_PURPLE} Setting font size
-pacman -S --noconfirm terminus-font
+banner ${LIGHT_PURPLE} "Checking if script is update to date..."
+test_compare_versions $VERSION $ONLINE_VERSION
+sleep 5
+
+banner ${LIGHT_PURPLE} "Setting font size"
+pacman -S --noconfirm terminus-font figlet
 setfont ter-v22b
 clear
 
-output ${LIGHT_PURPLE} " █████   █████  ██      ██ ███████         ██    ██ ██████  ";
-output ${LIGHT_PURPLE} "██   ██ ██   ██ ██      ██ ██              ██    ██      ██ ";
-output ${LIGHT_PURPLE} "███████ ███████ ██      ██ ███████         ██    ██  █████  ";
-output ${LIGHT_PURPLE} "██   ██ ██   ██ ██      ██      ██          ██  ██  ██      ";
-output ${LIGHT_PURPLE} "██   ██ ██   ██ ███████ ██ ███████           ████   ███████ ";
-output ${LIGHT_PURPLE} "                                                            ";
-output ${LIGHT_PURPLE} "                                                            ";
-output ${LIGHT_RED} "==Advanced ArchLinux Installer Script v2=="
-output ${LIGHT_RED} "       =AALIS in Archland!=          "
+
+output ${LIGHT_PURPLE} "$(figlet -pctf big "Advanced ArchLinux Install Script")"
+output ${LIGHT_BLUE} "$(figlet -kctWf big "AALIS v${VERSION}")"
+output ${LIGHT_RED} "$(figlet -kctWf term "~ AALIS in Archland! ~")"
 
 if [[ "yes" == $(askYesNo "Would you like to start the install?") ]]; then
     output ${LIGHT_GREEN} "Lets begin the installation!"

@@ -18,7 +18,8 @@ function output(){
     echo -e "${1}${2}${NC}"
 }
 
-#Found this function on StackOverflow, modded it to create a centered header box without edges and optional second color
+# Found this function on Unix StackExchange (https://unix.stackexchange.com/a/70616/502849 by manatwork), modded it to create a centered banner made of - without edges and optional second color for text
+# Multi line banner are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line" "second line" "third line"`
 function banner() {
     local s=("${@:3}") b w
     local second_color=$2
@@ -47,6 +48,84 @@ function askYesNo() {
             n|no|N|NO|No)    echo "no" ; break;;
         esac
     done
+}
+
+# Answer from https://stackoverflow.com/a/49351294/17812185 by Maxxim
+# Compare two version strings [$1: version string 1 (v1), $2: version string 2 (v2)]
+# Return values:
+#   0: v1 == v2
+#   1: v1 > v2
+#   2: v1 < v2
+# Based on: https://stackoverflow.com/a/4025065 by Dennis Williamson
+function compare_versions() {
+
+    # Trivial v1 == v2 test based on string comparison
+    [[ "$1" == "$2" ]] && return 0
+
+    # Local variables
+    local regex="^(.*)-r([0-9]*)$" va1=() vr1=0 va2=() vr2=0 len i IFS="."
+
+    # Split version strings into arrays, extract trailing revisions
+    if [[ "$1" =~ ${regex} ]]; then
+        va1=(${BASH_REMATCH[1]})
+        [[ -n "${BASH_REMATCH[2]}" ]] && vr1=${BASH_REMATCH[2]}
+    else
+        va1=($1)
+    fi
+    if [[ "$2" =~ ${regex} ]]; then
+        va2=(${BASH_REMATCH[1]})
+        [[ -n "${BASH_REMATCH[2]}" ]] && vr2=${BASH_REMATCH[2]}
+    else
+        va2=($2)
+    fi
+
+    # Bring va1 and va2 to same length by filling empty fields with zeros
+    (( ${#va1[@]} > ${#va2[@]} )) && len=${#va1[@]} || len=${#va2[@]}
+    for ((i=0; i < len; ++i)); do
+        [[ -z "${va1[i]}" ]] && va1[i]="0"
+        [[ -z "${va2[i]}" ]] && va2[i]="0"
+    done
+
+    # Append revisions, increment length
+    va1+=($vr1)
+    va2+=($vr2)
+    len=$((len+1))
+
+    # *** DEBUG ***
+    #echo "TEST: '${va1[@]} (?) ${va2[@]}'"
+
+    # Compare version elements, check if v1 > v2 or v1 < v2
+    for ((i=0; i < len; ++i)); do
+        if (( 10#${va1[i]} > 10#${va2[i]} )); then
+            return 1
+        elif (( 10#${va1[i]} < 10#${va2[i]} )); then
+            return 2
+        fi
+    done
+
+    # All elements are equal, thus v1 == v2
+    return 0
+}
+
+# Test compare_versions [$1: version string 1, $2: version string 2, $3: expected result]
+function test_compare_versions() {
+    compare_versions "$1" "$2"
+    case $? in
+        0) op="==" ;;
+        1) op=">" ;;
+        2) op="<" ;;
+    esac
+
+    if [[ "$op" == "==" ]]; then
+        output ${LIGHT_GREEN} "The script is update to date!"
+    elif [[ "$op" == "<" ]]; then
+        output ${RED} "The script is out of date; the latest version is v${2}! The script will continue on, however it is recommended that you update the script!"
+    elif [[ "$op" == ">" ]]; then
+        output ${YELLOW} "The script is ahead of the release version, so this must be a release canidate or a beta build!"
+    else
+        banner ${RED} "SOMETHING HAS GONE WRONG, PLEASE REPORT THIS ERROR TO THE PROJECT'S GITLAB"
+    fi
+
 }
 
 function makePartitions(){ # $1 is the boot mode, $2 is the disk name, these are passed into the function

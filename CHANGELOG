@@ -3,6 +3,13 @@ KEY:
 - = removal
 * = bugfix
 
+Version 2.1.0
++ Added version checker
++ Added figlet terminal fonts for inital prompt
++ Added ability for script to set SSH_ASKPASS variable
++ Added abilty for script to set Kwallet parameters in SDDM
+* Fixed missing "" block around font size banner text
+
 
 Version 2.0.1 - commit 3c990481
 * Fixed lightdm not being enabled for Cinnamon
