@@ -3,6 +3,10 @@ KEY:
 - = removal
 * = bugfix
 
+
+Verion 2.1.1
+* Fixed issue where script would stop if the script's version was ahead of that of the current release
+
 Version 2.1.0
 + Added version checker
 + Added figlet terminal fonts for inital prompt

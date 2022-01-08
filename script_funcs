@@ -50,6 +50,7 @@ function askYesNo() {
     done
 }
 
+###################################################################################
 # Answer from https://stackoverflow.com/a/49351294/17812185 by Maxxim
 # Compare two version strings [$1: version string 1 (v1), $2: version string 2 (v2)]
 # Return values:
@@ -127,6 +128,7 @@ function test_compare_versions() {
     fi
 
 }
+###################################################################################
 
 function makePartitions(){ # $1 is the boot mode, $2 is the disk name, these are passed into the function
     if [[ "${2}" =~ "nvme" ]]; then #If the disk is a NVME disk

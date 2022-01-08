@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-VERSION=2.1.0
+VERSION=2.1.1
 ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
 
 echo -ne "\e[95m"
@@ -16,7 +16,7 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 banner ${LIGHT_PURPLE} "Checking if script is update to date..."
-test_compare_versions $VERSION $ONLINE_VERSION
+test_compare_versions $VERSION $ONLINE_VERSION || :
 sleep 5
 
 banner ${LIGHT_PURPLE} "Setting font size"
