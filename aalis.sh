@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
-set -e
+set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-VERSION=2.1.1
+VERSION=3.0.0
 ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
 
+# Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
+# is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
 echo -ne "\e[95m"
 echo    "---------------------------------"
 echo    "         Preflight Check         "
@@ -16,11 +18,11 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 banner ${LIGHT_PURPLE} "Checking if script is update to date..."
-test_compare_versions $VERSION $ONLINE_VERSION || :
+test_compare_versions $VERSION $ONLINE_VERSION || : # use null utility from POSIX to make the script not immedately exist if the script is a beta build or outdated
 sleep 5
 
 banner ${LIGHT_PURPLE} "Setting font size"
-pacman -S --noconfirm terminus-font figlet
+installPac "terminus-font figlet"
 setfont ter-v22b
 clear
 

@@ -17,10 +17,10 @@ if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then source ${SCRIPT_DIR}/sysconfig.conf
 output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
-banner ${LIGHT_PURPLE} "Enabling User Systemd services"
-systemctl daemon-reload
-systemctl --user enable ssh-agent
-systemctl --user enable emacs
+if [[ $(sudo pacman -Qs --color always "emacs" | grep "local" | grep "emacs ") ]]; then
+    banner ${LIGHT_PURPLE} "Enabling Emacs User Systemd service"
+    sudo systemctl --user enable emacs
+fi
 
 banner ${LIGHT_PURPLE} "Installing AUR Software"
 output ${YELLOW} "Installing Yay"
@@ -31,45 +31,100 @@ makepkg -si --noconfirm
 cd ~
 rm yay-bin -rf
 
-output ${YELLOW} "Installing Main AUR Packages"
-yay -S --noconfirm --needed pfetch-git neovim-plug-git zinit-git ttf-meslo-nerd-font-powerlevel10k ant-dracula-theme-git davmail git-credential-keepassxc mu platformio plexamp-appimage
+output ${YELLOW} "Installing ssh-agent Systemd Service"
+installYay "systemd-ssh-agent"
+sudo systemctl --user enable ssh-agent.service
+
+if [[ "$shell_type" == "zsh" && "$shell_type_plugins" == "yes" ]]; then
+    output ${YELLOW} "Installing ZSH Plugin Manager"
+    installYay "zinit-git"
+
+    if [[ ! "$use_lean_config" == "yes" ]]; then
+        output ${YELLOW} "Installing Extra ZSH Packages for NovaViper's Configurations"
+        installYay "pfetch-git zinit-git ttf-meslo-nerd-font-powerlevel10k"
+    fi
+fi
+
+
+if [[ "$term_editor" == "neovim" && "$term_editor_plugins" == "yes" ]]; then
+    output ${YELLOW} "Installing Neovim Plugin Manager"
+    installYay "neovim-plug-git"
+fi
+
+if [[ "$use_dracula_theme" == "yes" ]]; then
+    output ${YELLOW} "Installing main Dracula theme package"
+    installYay "ant-dracula-theme-git"
+
+    output ${YELLOW} "Installing QT apps Dracula theme package"
+    installYay "ant-dracula-kvantum-theme-git"
+fi
+
+output ${YELLOW} "Installing Pamac"
 output ${LIGHT_BLUE} "Note: The package archlinux-appstream-data-pamac will conflict with archlinux-appstream-data, please allow archlinux-appstream-data-pamac to install in order to install Pamac. Also allow all defaults by hitting the Enter key."
 output ${LIGHT_BLUE} "I will give you 10 seconds to lead the above message."
 sleep 10
-yay -S --needed pamac-all
+installYaySoft "pamac-all"
 
 if [[ "$is_laptop" == "yes" ]]; then
     output ${YELLOW} "Installing Laptop specific tools"
-    yay -S --noconfirm --needed tlpui
+    installYay "tlpui"
 fi
 
 if [[ "$use_swap" == "yes"  ]]; then
     output ${YELLOW} "Installing ZRAM modules"
-    yay -S --noconfirm --needed zramd
+    installYay "zramd"
     sudo systemctl enable zramd.service
 fi
 
 #DE Specific Install
 if [[ "$desktopenv" == "xfce"  ]]; then
     output ${YELLOW} "Installing XFCE specific AUR packages"
-    yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot xfce4-docklike-plugin-ng-git xfce4-windowck-plugin
-    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+    installYay "gnome-ssh-askpass3 menulibre mugshot"
+    if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
+        installYay "xfce4-docklike-plugin-ng-git xfce4-windowck-plugin"
+    fi
+    if [[ "$is_laptop" == "yes" ]]; then
+        output ${YELLOW} "Installing extra libinput packages"
+        installYay "libinput-gestures"
+    fi
+
 elif [[ "$desktopenv" == "gnome"  ]]; then
     output ${YELLOW} "Installing Gnome specific AUR packages"
-    yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot
-    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+    installYay "gnome-ssh-askpass3 menulibre mugshot"
+    if [[ "$is_laptop" == "yes" ]]; then
+        output ${YELLOW} "Installing extra libinput packages"
+        installYay "libinput-gestures"
+    fi
+
 elif [[ "$desktopenv" == "kde"  ]]; then
     output ${YELLOW} "Installing KDE specific packages"
-    yay -S --noconfirm --needed ant-dracula-kde-theme-git ant-dracula-kvantum-theme-git kde-servicemenus-pdf rootactions-servicemenu plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git
-    output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
-    echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
+    installYay "kde-servicemenus-pdf rootactions-servicemenu"
+    if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
+        installYay "plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git"
+    fi
+    if [[ "$use_dracula_theme" == "yes" ]]; then
+        output ${YELLOW} "Installing KDE specific Dracula theme package"
+        installYay "ant-dracula-kde-theme-git"
+    fi
+    if [[ "$is_laptop" == "yes" ]]; then
+        output ${YELLOW} "Installing GUI for Wacom drivers"
+        installYay "libinput-gestures"
+    fi
+
 elif [[ "$desktopenv" == "cinnamon"  ]]; then
     output ${YELLOW} "Installing Cinnamon specific packages"
-    yay -S --noconfirm --needed gnome-ssh-askpass3 menulibre mugshot
-    output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-    echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+    installYay "gnome-ssh-askpass3 menulibre mugshot"
+    if [[ "$is_laptop" == "yes" ]]; then
+        output ${YELLOW} "Installing GUI for Wacom drivers"
+        installYay "libinput-gestures"
+    fi
+
+fi
+
+# Install user specified aur packages, filters out pacman packages from AUR packages
+if [ -f ${SCRIPT_DIR}/user_pkglist.txt ]; then
+    banner ${LIGHT_PURPLE} "Installing Additional User Packages"
+    installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
 fi
 
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"

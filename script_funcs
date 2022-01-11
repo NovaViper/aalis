@@ -14,12 +14,42 @@ NC='\e[39m' # No Color
 #################################################
 #### Functions to be used across the main scripts
 #################################################
+function installPac(){
+    pacman -S --needed --noconfirm $1
+}
+
+function installPacSoft(){
+    pacman -S --needed $1
+}
+
+function removePac(){
+    pacman -R --noconfirm $1
+}
+
+function installYay(){
+    yay -S --needed --noconfirm --batchinstall $1
+}
+
+function installYaySoft(){
+    yay -S --needed $1
+}
+
+# Parameters:
+#   $1:     Color code
+#   $2:     String to output
 function output(){
     echo -e "${1}${2}${NC}"
 }
 
 # Found this function on Unix StackExchange (https://unix.stackexchange.com/a/70616/502849 by manatwork), modded it to create a centered banner made of - without edges and optional second color for text
-# Multi line banner are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line" "second line" "third line"`
+# Parameters
+#   $1:     First color
+#   $2:     Second color (optional)
+#   $3...:  String text, can be multiple string argumnts for each line
+#
+# Example:
+#   Single line banners are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line"``
+#   Multi line banners are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line" "second line" "third line"`
 function banner() {
     local s=("${@:3}") b w
     local second_color=$2
@@ -39,6 +69,10 @@ function banner() {
     echo -e "-${b//?/-}-${NC}"
 }
 
+# Ask a yes/no question
+# Parameters
+#   $color:     Optional color code to change the output's color
+#   $1:         The outputted question
 function askYesNo() {
     color=${2:-${YELLOW}}
     while true; do
@@ -130,20 +164,24 @@ function test_compare_versions() {
 }
 ###################################################################################
 
-function makePartitions(){ # $1 is the boot mode, $2 is the disk name, these are passed into the function
-    if [[ "${2}" =~ "nvme" ]]; then #If the disk is a NVME disk
-        if [[ "${1}" = "uefi" ]]; then #If in UEFI mode, then use UEFI mode partition next
+# Create filesystems on the specified disk based on what boot mode is specified
+# Parameters
+#   $1:     the boot mode
+#   $2:     the disk's name
+function makeFilesystems(){
+    if [[ "${2}" =~ "nvme" ]]; then
+        if [[ "${1}" = "uefi" ]]; then
             BOOT_DRIVE="${2}p1"
             ROOT_DRIVE="${2}p2"
-        else #If not, then use BIOS mode partition index
+        else
             BOOT_DRIVE="${2}p"
             ROOT_DRIVE="${2}p3"
         fi
-    else #If the disk ISN'T a NVME disk
-        if [[ "${1}" = "uefi" ]]; then #If in UEFI mode, then use UEFI mode partition next
+    else
+        if [[ "${1}" = "uefi" ]]; then
             BOOT_DRIVE="${2}1"
             ROOT_DRIVE="${2}2"
-        else #If not, then use BIOS mode partition index
+        else
             BOOT_DRIVE="${2}2"
             ROOT_DRIVE="${2}3"
         fi
@@ -277,7 +315,7 @@ function getSubvolInfo() {
     then # Then we save the values for later use and continue
         rootsubvol_name=${name}
         rootsubvol_id=${id}
-    else # If not, then end the script because something is really wrong here!
+    else
         output ${LIGHT_RED} "Can't determine name and/or id" >&2
         sleep 2
         exit 1;

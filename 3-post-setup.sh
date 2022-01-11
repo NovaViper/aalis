@@ -76,7 +76,7 @@ while true; do
         break;;
     G | g)
         banner ${LIGHT_PURPLE} "Installing GRUB"
-        pacman -S --needed --noconfirm grub efibootmgr
+        installPac "grub efibootmgr"
         if [[ -d "/sys/firmware/efi" ]]; then
             grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
         fi

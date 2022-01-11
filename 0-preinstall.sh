@@ -16,6 +16,8 @@ mkdir ${SCRIPT_DIR}/logs
 touch ${SCRIPT_DIR}/logs/preinstall.log
 exec &> >(tee ${SCRIPT_DIR}/logs/preinstall.log)
 
+# Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
+# is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
 echo -ne "\e[95m"
 echo    "---------------------------------"
 echo    "         Preflight Check         "
@@ -26,12 +28,12 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 banner ${LIGHT_PURPLE} "Configuring Pacman"
-sed -i 's/^#Color/Color/' /etc/pacman.conf
-sed -i 's/^#Para/Para/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /etc/pacman.conf # Enable colored output
+sed -i 's/^#Para/Para/' /etc/pacman.conf # Enable Parallel downloading for faster installation
 
 
 banner ${LIGHT_PURPLE} "Starting Preinstallation Phase"
-if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then output ${LIGHT_BLUE} "Removing old sysconfig.conf"; rm ${SCRIPT_DIR}/sysconfig.conf; fi
+if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then output ${LIGHT_BLUE} "Removing old sysconfig.conf"; rm ${SCRIPT_DIR}/sysconfig.conf; fi # Clean up old run
 
 if [[ "yes" == $(askYesNo "Are you installing ArchLinux on a laptop?") ]]; then is_laptop="yes"; fi
 
@@ -39,16 +41,16 @@ if [[ "yes" == $(askYesNo "Do you want to use SWAP?") ]]; then use_swap="yes"; f
 
 if [[ "yes" == $(askYesNo "Do you want to use LUKS disk encryption?") ]]; then use_crypt="yes"; fi
 
-banner ${LIGHT_PURPLE} "Select your disk to format"
-lsblk
 while true; do
+    banner ${LIGHT_PURPLE} "Select a disk you wish to format"
+    lsblk
     echo "Please enter disk to work on: (example /dev/sda)"
     read DISK
     if [[ ! "$DISK" = "" ]]; then
-        output ${LIGHT_RED} "THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK$"
+        output ${LIGHT_RED} "THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK!"
         if [[ "no" == $(askYesNo "Are you sure you want to continue?" ${LIGHT_RED}) ]]; then
-            output ${LIGHT_RED} "Stopping script"
-            exit 1;
+            output ${LIGHT_RED} "Ok.. going to ask again"
+            clear
         else
             output ${LIGHT_GREEN} "Ok, lets get started!"
             sleep 1
@@ -61,7 +63,6 @@ while true; do
 done
 
 banner ${LIGHT_PURPLE} "Formatting disk, ${DISK}..."
-#Unmount everything
 if grep -qs '/mnt' /proc/mounts; then
     output ${YELLOW} "Attempting to unmount"
     umount /mnt/* -A -f
@@ -69,23 +70,22 @@ if grep -qs '/mnt' /proc/mounts; then
     if [[ "$use_crypt" = "yes"  ]]; then cryptsetup close cryptroot; fi
 fi
 
-# disk prep
-sgdisk -Z ${DISK} # zap all on disk
-sgdisk -a 2048 -o ${DISK} # new gpt disk 2048 alignment
+sgdisk -Z ${DISK} # Destory everything on disk
+sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 
-# create partitions
+# Create partitions
 if [ -d /sys/firmware/efi ]; then
     output ${YELLOW} "Creating UEFI boot partition"
     sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
     sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
-    makePartitions "uefi" ${DISK}
+    makeFilesystems "uefi" ${DISK}
 else
     output ${YELLOW} "Creating BIOS boot partition"
     sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
     sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
     sgdisk -n 3::-0 --typecode=3:8300 ${DISK} # partition 3 (Root), default start, remaining
-    sgdisk -A 1:set:2 ${DISK}
-    makePartitions "bios" ${DISK}
+    sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
+    makeFilesystems "bios" ${DISK}
 fi
 
 output ${LIGHT_BLUE} "Lets confirm if everything is correct!"
@@ -95,7 +95,6 @@ if ! grep -qs '/mnt' /proc/mounts; then
     exit 1
 fi
 
-#Output mounts
 lsblk
 if [[ "yes" = $(askYesNo "Does everything look correct?") ]]; then
     output ${LIGHT_GREEN} "Ok, moving on!"
@@ -105,10 +104,10 @@ else
 fi
 
 banner ${LIGHT_PURPLE} "Arch Install on Main Drive"
-pacstrap /mnt --noconfirm --needed base base-devel linux linux-firmware git
+pacstrap /mnt --noconfirm --needed base base-devel linux linux-firmware
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Add swap to fstab, so it KEEPS working after installation.
+# Add swap to fstab, so it KEEPS working after installation. Added lower priority for zram
 if [[ "$use_swap" = "yes"  ]]; then echo "/swap/swapfile    none    swap    defaults,pri=10     0   0" >> /mnt/etc/fstab; fi
 
 output ${LIGHT_BLUE} "Lets do one final check to make sure your mounts are correct! I will display the fstab in 5 seconds."

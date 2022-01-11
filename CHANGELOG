@@ -2,7 +2,24 @@ KEY:
 + = addition
 - = removal
 * = bugfix
+^ = enhancement/change
 
+Version 3.0.0
++ Added ability for users to specify their own packages to install during installation (suports pacman and AUR packages, and will automatically discover what packages is under the arch repos and which ones are not)
++ Added terminal editor selector menu, now you can select from nano, vim, neovim (with a mode where the user can select between a lean configuration with a few plugins, my own fully featured configuration, and no premade configurations), and emacs!
++ Added shell selector menu, now you can choose between bash, zsh (also with a configuration submenu selection as like neovim), and fish!
++ Added Dracula Theme selection menu, now you can specify if you want the Dracula theme or not
++ Added Minimal install option, this removes alot of unnecessary menus (like the configuration menus for neovim and zsh), and packages!
++ Added optional Emacs installer, for those who use Emacs for other things other than text editing
++ Added kdeplasma-addons package for KDE, so you can get the full featured set of KDE widgets
++ Added systemd-ssh-agent AUR package, so now enabling ssh-agent via systemd is much easier on the script
++ Added libinput-guestures package, for better touchpad gestures for laptop users!
++ Seperated many packages into their own menu
+- Sudo users no longer can use sudo without being promtped by a password first.
+* Fixed issue with emacs zsh plugin not working properly
+* Fixed systemctl not starting services for users
+^ Disk format menu now doesn't stop the script when you tell it not to format a disk, it just simply reloads the menu and lets you select again
+^ Lots of code clean up, should be much easier to read now!
 
 Verion 2.1.1
 * Fixed issue where script would stop if the script's version was ahead of that of the current release

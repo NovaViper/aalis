@@ -5,7 +5,15 @@ users=()
 is_touchscreen=""
 use_graphics=""
 use_bluetooth=""
+shell_type=""
+shell_type_root=""
+shell_type_plugins=""
+term_editor=""
+term_editor_plugins=""
+use_lean_config=""
+use_dracula_theme=""
 microcode=""
+minimal_mode=""
 desktopenv=""
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
@@ -13,6 +21,9 @@ SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 touch ${SCRIPT_DIR}/logs/setup.log
 exec &> >(tee ${SCRIPT_DIR}/logs/setup.log)
 
+# Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
+# and the sysconfig.conf file (which holds all variables from previous steps of the script) are present.
+# These files under any circumstance SHOULD NEVER be missing or really bad things will happen.
 echo -ne "\e[95m"
 echo    "---------------------------------"
 echo    "         Preflight Check         "
@@ -23,10 +34,15 @@ if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then source ${SCRIPT_DIR}/sysconfig.conf
 output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
+
+if [[ "yes" == $(askYesNo "Would you like to install in minimal mode?") ]]; then minimal_mode="yes"; fi
+
+if [[ "yes" == $(askYesNo "Would you like to install the Dracula theme?") ]]; then use_dracula_theme="yes"; fi
+
 banner ${LIGHT_PURPLE} "Configuring Pacman"
-sed -i 's/^#Color/Color/' /etc/pacman.conf
-sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
-sed -i 's/^#Para/Para/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /etc/pacman.conf # Enable colored output
+if [[ "$minimal_mode" != "yes" ]]; then sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf; fi # Enable 32bit library fr Steam
+sed -i 's/^#Para/Para/' /etc/pacman.conf # Enable Parallel downloading for faster installation
 pacman -Syu
 
 banner ${LIGHT_PURPLE} "Setup Language to US and set locale, and hostname"
@@ -38,28 +54,30 @@ systemctl enable systemd-timesyncd
 hwclock --systohc
 localectl set-locale LANG="en_US.UTF-8" LC_TIME="en_US.UTF-8"
 localectl set-keymap us # Set keymaps
-pacman -S --needed --noconfirm hunspell-en_us
+installPac "hunspell-en_us"
 read -p 'Hostname: ' hostname
 echo "$hostname" >> /etc/hostname
 echo "127.0.0.1 localhost" >> /etc/hosts
 echo "127.0.0.1 $hostname" >> /etc/hosts
 echo "::1       localhost" >> /etc/hosts
-#Configure sudoers
-sed -i 's/^# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
+#Configure sudoers to allow every user under the wheel group to use sudo
+sed -i 's/^# %wheel ALL=(ALL)/%wheel ALL=(ALL)/' /etc/sudoers
 
 banner ${LIGHT_PURPLE} "Installing Base System Packages"
-pacman -S --needed --noconfirm base base-devel linux linux-firmware reflector git neovim yadm gnupg zsh networkmanager dhclient dialog wpa_supplicant wireless_tools netctl inetutils openssh openvpn fzf
+installPac "base base-devel linux linux-firmware reflector git gnupg networkmanager dhclient dialog wpa_supplicant wireless_tools netctl inetutils openssh"
+
 systemctl enable NetworkManager
 systemctl enable sshd
 systemctl enable reflector.timer
 
 banner ${LIGHT_PURPLE} "Installing Filesystem Packages"
-pacman -S --needed --noconfirm ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar p7zip unarchiver
+installPac "ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar p7zip unarchiver"
 
-banner ${LIGHT_PURPLE} "Configuring User Directories"
-pacman -S --needed --noconfirm xdg-user-dirs xdg-utils
-xdg-user-dirs-update
-output ${YELLOW} "Configuring environment variables"
+banner ${LIGHT_PURPLE} "Configuring XDG User Directories"
+installPac "xdg-user-dirs xdg-utils"
+xdg-user-dirs-update # Updates user directories for XDG Specification
+
+output ${YELLOW} "Configuring environment variables for XDG specification"
 echo >> /etc/profile
 echo 'export XDG_CONFIG_HOME="$HOME/.config"' >> /etc/profile
 echo 'export XDG_CACHE_HOME="$HOME/.cache"' >> /etc/profile
@@ -71,44 +89,173 @@ echo 'export LESSHISTFILE="$XDG_CONFIG_HOME/less/history"' >> /etc/profile
 echo 'export LESSKEY="$XDG_CONFIG_HOME/less/keys"' >> /etc/profile
 echo 'export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm"' >> /etc/profile
 
-echo "QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
-echo "GTK_THEME='Ant-Dracula'" >> /etc/environment
+if [[ "$use_dracula_theme" == "yes" ]]; then
+    output ${YELLOW} "Configuring environment variables for Dracula theme"
+    echo "QT_STYLE_OVERRIDE=kvantum" >> /etc/environment
+    echo "GTK_THEME='Ant-Dracula'" >> /etc/environment
+fi
 
-mkdir -p /etc/skel/.config/systemd/user
-cp ${SCRIPT_DIR}/ssh-agent.service /etc/skel/.config/systemd/user/ssh-agent.service
-echo "SSH_AUTH_SOCK  DEFAULT=${XDG_RUNTIME_DIR}/ssh-agent.socket" >> /etc/security/pam_env.conf
+# Shell Type configuration selection, asks user what shell they want ot use
+while true; do
+    read -p "$(output ${YELLOW} "What shell do you want to use? [B]ash, [Z]sh, [F]ish?: ")" shell
+    case $shell in
+    B | b)
+        output ${YELLOW} "Ok, there is nothing else to do for Bash, so moving on!"
+        shell_type="bash"
+        break;;
+    Z | z)
+        output ${YELLOW} "========= Installing and setting up ZSH ========="
+        shell_type="zsh"
+        installPac "zsh"
 
-banner ${LIGHT_PURPLE} "Configuring ZSH"
-# Change root shell to ZSH
-chsh -s /bin/zsh
-#Place zsh files in /etc/zsh folder for system-wide use
-cp ${SCRIPT_DIR}/zshenv /etc/zsh/zshenv
-cp ${SCRIPT_DIR}/zshrc /etc/zsh/zshrc
-#Place zshrc files in skel folder so users can get them
-mkdir -p /etc/skel/.config/zsh
-cp ${SCRIPT_DIR}/zshrc /etc/skel/.config/zsh/.zshrc
+        # This forces ZSH to use XDG specification
+        cp ${SCRIPT_DIR}/zshenv /etc/zsh/zshenv
 
-banner ${LIGHT_PURPLE} "Configuring Neovim"
-mkdir -p /etc/skel/.config/nvim
-cp ${SCRIPT_DIR}/init.vim /etc/skel/.config/nvim/init.vim
-cp ${SCRIPT_DIR}/plugins.vim /etc/skel/.config/nvim/plugins.vim
+        if [[ "yes" == $(askYesNo "Would you like to make the root user use ZSH?") ]]; then
+            output ${YELLOW} "Changing root shell"
+            shell_type_root="yes"
+            chsh -s /bin/zsh
+        fi
+
+        #Minimal Selection for ZSH, asks user if they want to use predefined configurations or just start off blank
+        if [[ "$minimal_mode" != "yes" ]]; then
+            if [[ "yes" == $(askYesNo "Would you like to use NovaViper's ZSH settings and plugins?") ]]; then
+                output ${YELLOW} "Adding NovaViper's ZSH Settings"
+                installPac "fzf subversion"
+                shell_type_plugins="yes"
+
+                #Place zshrc files in skel folder so users can get them
+                mkdir -p /etc/skel/.config/zsh
+                cp ${SCRIPT_DIR}/zshrc /etc/skel/.config/zsh/.zshrc
+
+                # Add custom ZSH config for root user if prompted
+                if [[ "$shell_type_root" == "yes" ]]; then
+                    cp ${SCRIPT_DIR}/zshrc /etc/zsh/zshrc
+                fi
+            else
+                if [[ "yes" == $(askYesNo "Would you like to use a lean ZSH configuration with a few plugins? (autosuggestion,syntax highlighting,autocompletion,history search)") ]]; then
+                    output ${YELLOW} "Adding Minimal ZSH Settings"
+                    shell_type_plugins="yes"
+                    use_lean_config="yes"
+
+                    #Place zshrc files in skel folder so users can get them
+                    mkdir -p /etc/skel/.config/zsh
+                    cp ${SCRIPT_DIR}/zshrc_min /etc/skel/.config/zsh/.zshrc
+
+                    # Add custom ZSH config for root user if prompted
+                    if [[ "$shell_type_root" == "yes" ]]; then
+                        cp ${SCRIPT_DIR}/zshrc_min /etc/zsh/zshrc
+                    fi
+                else
+                    output ${YELLOW} "Ok, skipping adding preconfigured zsh settings"
+                fi
+            fi
+        fi
+        break;;
+    F | f)
+        output ${YELLOW} "========= Installing and setting up Fish ========="
+        shell_type="fish"
+        installPac "fish"
+
+        if [[ "yes" == $(askYesNo "Would you like to make the root user use Fish?") ]]; then
+            output ${YELLOW} "Changing root shell"
+            shell_type_root="yes"
+            chsh -s /bin/fish
+        fi
+        break;;
+    *) output ${LIGHT_RED} "Invalid input" ;;
+    esac
+done
+
+# Terminal Text editor selector
+while true; do
+    read -p "$(output ${YELLOW} "What terminal text editor do you want to use? [N]ano, Neov[I]m, [V]im, [E]macs: ")" editor
+    case $editor in
+    N | n)
+        output ${YELLOW} "========= Installing Nano ========="
+        term_editor="nano"
+        installPac "nano"
+        break;;
+    I | I)
+        output ${YELLOW} "========= Installing Neovim ========="
+        term_editor="neovim"
+        installPac "neovim"
+
+        mkdir -p /etc/skel/.config/nvim
+
+        # Minimal selection for Neovim
+        if [[ "$minimal_mode" != "yes" ]]; then
+            if [[ "yes" == $(askYesNo "Would you like to use NovaViper's Neovim settings and plugins?") ]]; then
+                output ${YELLOW} "Adding NovaViper's Neovim Settings"
+                term_editor_plugins="yes"
+
+                #Place neovim files in skel folder so users can get them
+                cp ${SCRIPT_DIR}/init.vim /etc/skel/.config/nvim/init.vim
+                cp ${SCRIPT_DIR}/plugins.vim /etc/skel/.config/nvim/plugins.vim
+            else
+                if [[ "yes" == $(askYesNo "Would you like to use a lean Neovim configuration with a few plugins? (vim-airline, vim-fugitive, vim-gitgutter)") ]]; then
+                    output ${YELLOW} "Adding Minimal Neovim Settings"
+                    term_editor_plugins="yes"
+                    use_lean_config="yes"
+
+                    #Place neovim files in skel folder so users can get them
+                    mkdir -p /etc/skel/.config/nvim
+                    cp ${SCRIPT_DIR}/init_min.vim /etc/skel/.config/nvim/init.vim
+                    cp ${SCRIPT_DIR}/plugins_min.vim /etc/skel/.config/nvim/plugins.vim
+                else
+                    output ${YELLOW} "Ok, skipping adding preconfigured neovim settings"
+                fi
+            fi
+        fi
+        break;;
+    V | v)
+        output ${YELLOW} "========= Installing Vim ========="
+        term_editor="vim"
+        installPac "vim"
+
+        output ${YELLOW} "Adding Vim XDG paths"
+        mkdir -p /etc/.cache/vim/{undo,swap,backup} /etc/.config/vim/after /etc/.local/share/vim
+        cp ${SCRIPT_DIR}/vimrc /etc/.config/vim/vimrc # Sends premade vimrc file with XDG configurations to skel folder for other users to use
+        echo 'export GVIMINIT='let $MYGVIMRC="$XDG_CONFIG_HOME/vim/gvimrc" | source $MYGVIMRC'' >> /etc/profile
+        echo 'export VIMINIT='let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc" | source $MYVIMRC'' >> /etc/profile
+
+        break;;
+    E | e)
+        output ${YELLOW} "========= Installing Emacs ========="
+        term_editor="emacs"
+        installPac "emacs"
+        break;;
+    *) output ${LIGHT_RED} "Invalid input" ;;
+    esac
+done
+
+if [[ "$term_editor" != "emacs" && "yes" == $(askYesNo "Would you like to install Emacs also for other tasks?") ]]; then
+    output ${YELLOW} "========= Installing Emacs ========="
+    installPac "emacs"
+fi
 
 banner ${LIGHT_PURPLE} "Adding and Configuring Users"
-#Ask for root password
 addRootPass
 
 #Additional User Prompt
 while [[ "yes" == $(askYesNo "Would you like to add any additional users?") ]]; do addUserPass; done
 
-#Configure ZSH for additional users
+#Configure Shell environments for additional users
 if [[ "${users[@]}" ]]; then
-    output ${YELLOW} "====== Configuring additional users for ZSH ======"
-    echo
-    for i in "${users[@]}"; do
-        usermod -s /bin/zsh $i
-    done
+    if [[ "$shell_type" == "zsh" ]]; then
+        output ${YELLOW} "====== Configuring additional users for ZSH ======"
+        echo
+        for i in "${users[@]}"; do
+            usermod -s /bin/zsh $i
+        done
+    elif [[ "$shell_type" == "fish" ]]; then
+        output ${YELLOW} "====== Configuring additional users for Fish ======"
+        echo
+        for i in "${users[@]}"; do
+            usermod -s /bin/fish $i
+        done
+    fi
 fi
-
 
 banner ${LIGHT_PURPLE} "Configuring Base System"
 if [[ "yes" == $(askYesNo "Do you want to install a graphical environment?") ]]; then
@@ -119,7 +266,7 @@ fi
 
 if [[ "$is_laptop" == "yes" ]]; then
     output ${YELLOW} "Installing TLP and other battery management tools"
-    pacman -S --noconfirm --needed acpi acpi_call tlp
+    installPac "acpi acpi_call tlp"
     systemctl enable tlp
 fi
 
@@ -130,40 +277,40 @@ while true; do
     I | i)
         output ${YELLOW} "========= Installing Intel Microcode ========="
         microcode="intel"
-        pacman -S --needed --noconfirm intel-ucode
+        installPac "intel-ucode"
         break;;
     A | a)
         output ${YELLOW} "========= Installing AMD Microcode ========="
         microcode="amd"
-        pacman -S --needed --noconfirm amd-ucode
+        installPac "amd-ucode"
         break;;
     *) output ${LIGHT_RED} "Invalid input";;
     esac
 done
 
 ## Graphics installer
-if [[ "$use_graphics" = "yes" ]]; then
+if [[ "$use_graphics" == "yes" ]]; then
     banner ${LIGHT_PURPLE} "Installing Graphical Environment"
     sleep 1
 
     #Network Manager
     output ${YELLOW} "======= Installing GUI components for Network Manager ========"
-    pacman -S --needed --noconfirm network-manager-applet networkmanager-openvpn openvpn
+    installPac "network-manager-applet networkmanager-openvpn openvpn"
 
     #Bluetooth
     if [[ "yes" == $(askYesNo "Would you like to download and enable Bluetooth?") ]]; then
         output ${YELLOW} "========= Installing Bluetooth ========="
         use_bluetooth="yes"
-        pacman -S --needed --noconfirm bluez bluez-utils
+        installPac "bluez bluez-utils"
         sed -i "250s/.*/AutoEnable=true/" /etc/bluetooth/main.conf
         systemctl enable bluetooth
     fi
 
     #Laptop Touchscreen
-    if [[ "$is_laptop" = "yes" && "yes" == $(askYesNo "Does your laptop have touchscreen capability?") ]]; then
+    if [[ "$is_laptop" == "yes" && "yes" == $(askYesNo "Does your laptop have touchscreen capability?") ]]; then
         output ${YELLOW} "========= Installing Wacom settings ========="
         is_touchscreen="yes"
-        pacman -S --noconfirm --needed libwacom xf86-input-wacom iio-sensor-proxy
+        installPac "libwacom xf86-input-wacom iio-sensor-proxy"
     fi
 
     #Audio Selection
@@ -172,11 +319,11 @@ if [[ "$use_graphics" = "yes" ]]; then
         case $audio in
         A | a)
             output ${YELLOW} "========= Installing PulseAudio protocols ========="
-            pacman -S --needed --noconfirm alsa-utils pulseaudio pulseaudio-alsa pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad
+            installPac "alsa-utils pulseaudio pulseaudio-alsa pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad"
             break;;
         W | w)
             output ${YELLOW} "========= Installing PipeWire protocols ========="
-            pacman -S --needed --noconfirm alsa-utils pipewire pipewire-media-session pipewire-pulse pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad
+            installPac "alsa-utils pipewire pipewire-media-session pipewire-pulse pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad"
             break;;
         *) output ${LIGHT_RED} "Invaild Input";;
         esac
@@ -185,7 +332,7 @@ if [[ "$use_graphics" = "yes" ]]; then
     #HP Printer configuration
     if [[ "yes" == $(askYesNo "Would you like to install HP Printer Modules?") ]]; then
         output ${YELLOW} "========= Installing HP modules ========="
-        pacman -S --needed --noconfirm cups cups-filters hplip
+        installPac "cups cups-filters hplip"
         systemctl enable cups
     fi
 
@@ -194,7 +341,7 @@ if [[ "$use_graphics" = "yes" ]]; then
         output ${YELLOW} "========= Installing Virt-Manager, Qemu and other required packages ========="
         output ${LIGHT_BLUE} "Note: The package iptables-nft will conflict with iptables, please allow iptables-nft to install in order to use Virt-Manager's virutal ethernet feature."
         sleep 5
-        pacman -S --needed qemu libvirt iptables-nft dnsmasq virt-manager virt-viewer bridge-utils dmidecode edk2-ovmf
+        installPacSoft "qemu libvirt iptables-nft dnsmasq virt-manager virt-viewer bridge-utils dmidecode edk2-ovmf"
         systemctl enable libvirtd
         output ${YELLOW} "====== Configuring KVM ======"
         sed -i '/unix_sock_group/s/^#//g' /etc/libvirt/libvirtd.conf
@@ -210,45 +357,73 @@ if [[ "$use_graphics" = "yes" ]]; then
         fi
     fi
 fi
+
 #Graphics Card Driver Installer
 while true; do
     read -p "$(output ${YELLOW} "What brand is your graphics? [I]ntel, [A]MD or [N]vidia?: ")" graphics
     case $graphics in
     I | i)
         output ${YELLOW} "========= Installing Intel Graphics ========="
-        pacman -S --needed --noconfirm xf86-video-intel mesa vulkan-intel vulkan-driver lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools
+        installPac "xf86-video-intel mesa"
+
+        if [[ "$minimal_mode" != "yes" ]]; then
+            output ${YELLOW} "Installing Intel Vulkan packages for Steam"
+            installPac "vulkan-intel vulkan-driver lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools"
+        fi
         break;;
     A | a)
         output ${YELLOW} "========= Installing AMD Graphics ========="
-        pacman -S --needed --noconfirm xf86-video-amdgpu mesa
-        while true; do
-            read -p "$(output ${YELLOW}"Are you using a [A]MD GPU or a [R]eadon GPU? ")" subgpu
-            case $subgpu in
-            A | a)
-                pacman -S --needed --noconfirm amdvlk lib32-amdvlk vulkan-driver vulkan-tools i2c-tools
-                break;;
-            R | r)
-                pacman -S --needed --noconfirm vulkan-radeon lib32-vulkan-radeon vulkan-driver vulkan-tools i2c-tools
-                break;;
-            *) output ${LIGHT_RED} "Invaild Input";;
-            esac
-        done
+        installPac "xf86-video-amdgpu mesa"
+        if [[ "$minimal_mode" != "yes" ]]; then
+            while true; do
+                read -p "$(output ${YELLOW}"Are you using a [A]MD GPU or a [R]eadon GPU? ")" subgpu
+                case $subgpu in
+                A | a)
+                    output ${YELLOW} "Installing AMD Vulkan packages for Steam"
+                    installPac "amdvlk lib32-amdvlk vulkan-driver vulkan-tools i2c-tools"
+                    break;;
+                R | r)
+                    output ${YELLOW} "Installing Radeon Vulkan packages for Steam"
+                    installPac "vulkan-radeon lib32-vulkan-radeon vulkan-driver vulkan-tools i2c-tools"
+                    break;;
+                *) output ${LIGHT_RED} "Invaild Input";;
+                esac
+            done
+        fi
         break;;
     N | n)
         output ${YELLOW} "========= Installing Nvidia Graphics ========="
-        pacman -S --needed --noconfirm nvidia nvidia-utils nvidia-settings lib32-nvidia-utils vulkan-tools i2c-tools vulkan-driver
+        installPac "nvidia nvidia-utils nvidia-settings"
+
+        if [[ "$minimal_mode" != "yes" ]]; then
+            output ${YELLOW} "Installing Nvidia Vulkan packages for Steam"
+            installPac "lib32-nvidia-utils vulkan-tools i2c-tools vulkan-driver"
+        fi
         break;;
     *) output ${LIGHT_RED} "Invalid input" ;;
     esac
 done
 
-#Font packs install
-output ${YELLOW} "====== Installing font packs ======"
-pacman -S --needed --noconfirm dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji
+if [[ "$minimal_mode" != "yes" ]]; then
+    #Font packs install
+    output ${YELLOW} "====== Installing font packs ======"
+    installPac "dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
 
-#Base user packages
-output ${YELLOW} "====== Installing base user packages ====="
-pacman -S --needed --noconfirm obs-studio firefox vlc papirus-icon-theme libreoffice-fresh xournalpp xclip copyq syncthing discord isync simple-scan octave htop appmenu-gtk-module emacs
+    #Base user packages
+    output ${YELLOW} "====== Installing base user packages ====="
+    installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module"
+
+    if [[ "yes" == $(askYesNo "Would you like to use the dotfiles manager, YADM?") ]]; then
+        output ${LIGHT_BLUE} "Installing YADM"
+        installPac "yadm"
+    fi
+else
+    #Base user packages
+    output ${YELLOW} "====== Installing base user packages ====="
+    installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module"
+fi
+
+
 
 #DE Install
 while true; do
@@ -258,55 +433,88 @@ while true; do
     X | x) # XFCE
         output ${YELLOW} "Installing XFCE and basic desktop apps"
         desktopenv="xfce"
-        pacman -S --needed --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies arc-gtk-theme arc-icon-theme file-roller geeqie catfish xreader gparted pavucontrol qalculate-gtk deluge-gtk baobab
+        installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies arc-gtk-theme arc-icon-theme file-roller catfish xreader gparted pavucontrol qalculate-gtk deluge-gtk baobab"
         systemctl enable lightdm
-        pacman -R --noconfirm ristretto
-        if [ "$use_bluetooth" = "yes" ]; then
+        output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+        echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+
+        # Ask to remove XFCE's ristretto program
+        if [[ "yes" == $(askYesNo "Do you want to use geeqie instead of XFCE's default image viewer ristretto? geeqie has some features that risteretto is missing like saving edited images.") ]]; then
+            installPac "geeqie"
+            removePac "ristretto"
+        fi
+        # Use Bluetooth if the user wanted to install it
+        if [ "$use_bluetooth" == "yes" ]; then
             output ${YELLOW} "Installing GUI for bluetooth"
-            pacman -S --noconfirm blueman
+            installPac "blueman"
         fi
         break;;
+
     G | g) # Gnome
         output ${YELLOW} "Installing Gnome and basic desktop apps"
         desktopenv="gnome"
-        pacman -S --needed --noconfirm xorg gdm gnome gnome-extra gnome-tweaks arc-gtk-theme arc-icon-theme file-roller gparted pavucontrol qalculate-gtk transmission-gtk baobab
+        installPac "xorg gdm gnome gnome-extra gnome-tweaks arc-gtk-theme arc-icon-theme file-roller gparted pavucontrol qalculate-gtk transmission-gtk baobab"
         systemctl enable gdm
-        if [ "$use_bluetooth" = "yes" ]; then
+        output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+        echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+
+        # Use Bluetooth if the user wanted to install it
+        if [ "$use_bluetooth" == "yes" ]; then
             output ${YELLOW} "Installing GUI for bluetooth"
-            pacman -S --needed --noconfirm blueman
+            installPac "blueman"
         fi
         break;;
+
     K | k) # KDE
         output ${YELLOW} "Installing KDE and basic desktop apps"
         desktopenv="kde"
-        pacman -S --needed --noconfirm xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight
+        installPac "xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools"
         systemctl enable sddm
-        if [ "$use_bluetooth" = "yes" ]; then
+        output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
+        echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
+
+        # Use Bluetooth if the user wanted to install it
+        if [ "$use_bluetooth" == "yes" ]; then
             output ${YELLOW} "Installing GUI for bluetooth"
-            pacman -S --needed --noconfirm bluedevil
-        fi
-        if [[ "$is_laptop" = "yes" && "$is_touchscreen" = "yes" ]]; then
-            output ${YELLOW} "Installing GUI for Wacom drivers"
-            pacman -S --needed --noconfirm kcm-wacomtablet
+            installPac "bluedevil"
         fi
 
+        # Install touchscreen laptop drivers if prompted to do so earlier
+        if [[ "$is_laptop" == "yes" && "$is_touchscreen" == "yes" ]]; then
+            output ${YELLOW} "Installing GUI for Wacom drivers"
+            installPac "kcm-wacomtablet"
+        fi
+
+        # Add KWallet to pam for auto unlock
         output ${YELLOW} "Adding Kwallet to PAM"
         sed -i '4s/.//' /etc/pam.d/sddm
         sed -i '15s/.//' /etc/pam.d/sddm
         break;;
+
     C | c) #Cinnamon
         output ${YELLOW} "Installing Cinnamon and basic desktop apps"
         desktopenv="cinnamon"
-        pacman -S --needed --noconfirm xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader
+        installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader"
         systemctl enable lightdm
-        if [ "$use_bluetooth" = "yes" ]; then
+        output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+        echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+
+        # Use Bluetooth if the user wanted to install it
+        if [ "$use_bluetooth" == "yes" ]; then
             output ${YELLOW} "Installing GUI for bluetooth"
-            pacman -S --needed --noconfirm blueman
+            installPac "blueman"
         fi
         break;;
     *) output ${LIGHT_RED} "Invalid input" ;;
     esac
 done
+
+# Install user specified aur packages, filters out AUR packages from ArchLinux repo packages
+if [ -f ${SCRIPT_DIR}/user_pkglist.txt ]; then
+    banner ${LIGHT_PURPLE} "Installing Additional User packages"
+    installPac "$(comm -12 <(pacman -Slq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
+fi
+
 
 output ${LIGHT_BLUE} "Saving Parameters for final step"
 if [[ "${users[@]}" ]]; then echo "users=$users" >> ${SCRIPT_DIR}/sysconfig.conf; fi
@@ -314,6 +522,14 @@ echo "microcode=$microcode" >> ${SCRIPT_DIR}/sysconfig.conf
 echo "use_graphics=$use_graphics" >> ${SCRIPT_DIR}/sysconfig.conf
 echo "desktopenv=$desktopenv" >> ${SCRIPT_DIR}/sysconfig.conf
 echo "is_touchscreen=$is_touchscreen" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "shell_type=$shell_type" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "shell_type_plugins=$shell_type_plugins" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "term_editor=$term_editor" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "term_editor_plugins=$term_editor_plugins" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_lean_config=$use_lean_config" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_dracula_theme=$use_dracula_theme" >> ${SCRIPT_DIR}/sysconfig.conf
+echo "minimal_mode=$minimal_mode" >> ${SCRIPT_DIR}/sysconfig.conf
+
 
 if [ $(whoami) = "root"  ];
 then

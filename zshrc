@@ -31,11 +31,11 @@ zinit light "zsh-users/zsh-history-substring-search"
 zinit light "marlonrichert/zsh-autocomplete"
 zinit light "zsh-users/zsh-autosuggestions"
 zinit light "zsh-users/zsh-completions"
-zinit snippet OMZ::plugins/emacs/emacs.plugin.zsh
+zinit ice svn
+zinit snippet OMZ::plugins/emacs
 
 clear
 pfetch
-#neofetch --ascii_distro arch_small
 
 ####
 # User Configurations
