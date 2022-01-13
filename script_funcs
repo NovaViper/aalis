@@ -91,6 +91,7 @@ function askYesNo() {
 #   0: v1 == v2
 #   1: v1 > v2
 #   2: v1 < v2
+#   3: ERROR
 # Based on: https://stackoverflow.com/a/4025065 by Dennis Williamson
 function compare_versions() {
 
@@ -130,11 +131,14 @@ function compare_versions() {
     #echo "TEST: '${va1[@]} (?) ${va2[@]}'"
 
     # Compare version elements, check if v1 > v2 or v1 < v2
+    # If can't determine, then send error
     for ((i=0; i < len; ++i)); do
         if (( 10#${va1[i]} > 10#${va2[i]} )); then
             return 1
         elif (( 10#${va1[i]} < 10#${va2[i]} )); then
             return 2
+        else
+            return 3
         fi
     done
 
@@ -142,7 +146,7 @@ function compare_versions() {
     return 0
 }
 
-# Test compare_versions [$1: version string 1, $2: version string 2, $3: expected result]
+# Test compare_versions [$1: version string 1, $2: version string 2]
 function test_compare_versions() {
     compare_versions "$1" "$2"
     case $? in
@@ -152,13 +156,13 @@ function test_compare_versions() {
     esac
 
     if [[ "$op" == "==" ]]; then
-        output ${LIGHT_GREEN} "The script is update to date!"
+        echo 0
     elif [[ "$op" == "<" ]]; then
-        output ${RED} "The script is out of date; the latest version is v${2}! The script will continue on, however it is recommended that you update the script!"
+        echo 1
     elif [[ "$op" == ">" ]]; then
-        output ${YELLOW} "The script is ahead of the release version, so this must be a release canidate or a beta build!"
+        echo 2
     else
-        banner ${RED} "SOMETHING HAS GONE WRONG, PLEASE REPORT THIS ERROR TO THE PROJECT'S GITLAB"
+        echo 3
     fi
 
 }

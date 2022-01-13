@@ -5,7 +5,10 @@ KEY:
 ^ = enhancement/change
 
 Version 3.1.0
+* Fixed issue where lower case 'i' wouldn't select Neovim installer
+* Fixed vimrc and other XDG-based vim directories not being properly setup inside the skeleton folder for users
 * Fixed issue where `btrfs_map_physical` script could not be during installation
+^ Version Checker now asks if you want to continue
 ^ Made EFI partition smaller
 ^ Systemd-boot menu now only works for UEFI and not BIOS
 ^ UEFI ESP partition is under /efi, which expands bootloader compatability and fix any other pitfalls of using /boot on UEFI systems

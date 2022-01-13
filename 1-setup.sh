@@ -176,7 +176,7 @@ while true; do
         term_editor="nano"
         installPac "nano"
         break;;
-    I | I)
+    I | i)
         output ${YELLOW} "========= Installing Neovim ========="
         term_editor="neovim"
         installPac "neovim"
@@ -214,8 +214,8 @@ while true; do
         installPac "vim"
 
         output ${YELLOW} "Adding Vim XDG paths"
-        mkdir -p /etc/.cache/vim/{undo,swap,backup} /etc/.config/vim/after /etc/.local/share/vim
-        cp ${SCRIPT_DIR}/vimrc /etc/.config/vim/vimrc # Sends premade vimrc file with XDG configurations to skel folder for other users to use
+        mkdir -p /etc/skel/.cache/vim/{undo,swap,backup} /etc/skel/.config/vim/after /etc/skel/.local/share/vim
+        cp ${SCRIPT_DIR}/vimrc /etc/skel/.config/vim/vimrc # Sends premade vimrc file with XDG configurations to skel folder for other users to use
         echo 'export GVIMINIT='let $MYGVIMRC="$XDG_CONFIG_HOME/vim/gvimrc" | source $MYGVIMRC'' >> /etc/profile
         echo 'export VIMINIT='let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc" | source $MYVIMRC'' >> /etc/profile
 
