@@ -169,7 +169,8 @@ function test_compare_versions() {
 #   $1:     the boot mode
 #   $2:     the disk's name
 function makeFilesystems(){
-    if [[ "${2}" =~ "nvme" ]]; then
+    if [[ "${2}" =~ "nvme" ]]; then # If the boot drive is an NVMe drive
+        no_defrag="yes"
         if [[ "${1}" = "uefi" ]]; then
             BOOT_DRIVE="${2}p1"
             ROOT_DRIVE="${2}p2"
@@ -178,6 +179,10 @@ function makeFilesystems(){
             ROOT_DRIVE="${2}p3"
         fi
     else
+        if [[ $(cat /sys/block${2}/queue/rotational) == 0 ]]; then # If the device uses rotation, if it returns 0, then it has to be an SSD since SSDs do not rotate, so make it not use autodefrag
+            no_defrag="yes"
+        fi
+
         if [[ "${1}" = "uefi" ]]; then
             BOOT_DRIVE="${2}1"
             ROOT_DRIVE="${2}2"
@@ -195,7 +200,7 @@ function makeFilesystems(){
         ROOT_DRIVE="/dev/mapper/cryptroot"
     fi
 
-    #Create the filesystems
+    # Create the filesystems
     output ${YELLOW} "Creating Filesystems..."
     mkfs.fat -F32 ${BOOT_DRIVE} # Create boot filesystem
     while true; do
@@ -208,8 +213,15 @@ function makeFilesystems(){
                 output ${YELLOW} "Mounting everything"
                 mount ${ROOT_DRIVE} /mnt
 
-                mkdir -p /mnt/boot
-                mount ${BOOT_DRIVE} /mnt/boot
+                if [ -d /sys/firmware/efi ]; then
+                    output ${YELLOW} "Configuring boot partition for UEFI"
+                    mkdir -p /mnt/efi
+                    mount ${BOOT_DRIVE} /mnt/efi
+                else
+                    output ${YELLOW} "Configuring boot partition for BIOS"
+                    mkdir -p /mnt/boot
+                    mount ${BOOT_DRIVE} /mnt/boot
+                fi
 
                 if [[ "$use_swap" = "yes"  ]]; then
                     output ${YELLOW} "Lets make the swapfile!"
@@ -232,21 +244,41 @@ function makeFilesystems(){
                 btrfs subvolume create /mnt/@log
                 if [[ "$use_swap" = "yes"  ]]; then btrfs subvolume create /mnt/@swap; fi
 
-                #Unmount /mnt so we can start mounting the btrfs subvolumes
+                # Unmount /mnt so we can start mounting the btrfs subvolumes
                 umount /mnt
 
                 output ${YELLOW} "Mounting everything"
-                # Mount root partition
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
-                #Make paths for mounts
-                mkdir -p /mnt/{boot,home,var}
+                if [[ "$no_defrag" == "yes" ]]; then
+                    mount -o defaults,noatime,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+                else
+                    mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+                fi
+
+
+                if [ -d /sys/firmware/efi ]; then
+                    output ${YELLOW} "Configuring boot partition for UEFI"
+                    mkdir -p /mnt/efi
+                    mount ${BOOT_DRIVE} /mnt/efi
+                else
+                    output ${YELLOW} "Configuring boot partition for BIOS"
+                    mkdir -p /mnt/boot
+                    mount ${BOOT_DRIVE} /mnt/boot
+                fi
+
+                # Mount Every other partition
+                mkdir -p /mnt/{home,var}
                 mkdir -p /mnt/var/{cache,log}
 
-                #Mount Every other partition
-                mount ${BOOT_DRIVE} /mnt/boot
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+                if [[ "$no_defrag" == "yes" ]]; then
+                    mount -o defaults,noatime,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
+                    mount -o defaults,noatime,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
+                    mount -o defaults,noatime,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+                else
+                    mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
+                    mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
+                    mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+                fi
+
                 if [[ "$use_swap" = "yes"  ]]; then
                     output ${YELLOW} "Lets make the swapfile!"
                     mkdir -p /mnt/swap

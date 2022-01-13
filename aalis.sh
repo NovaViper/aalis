@@ -3,7 +3,7 @@
 set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-VERSION=3.0.0
+VERSION=3.0.1-rc1
 ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
 
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)

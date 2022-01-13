@@ -76,7 +76,7 @@ sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 # Create partitions
 if [ -d /sys/firmware/efi ]; then
     output ${YELLOW} "Creating UEFI boot partition"
-    sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
+    sgdisk -n 1::+250M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
     sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
     makeFilesystems "uefi" ${DISK}
 else

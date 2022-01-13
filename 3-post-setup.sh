@@ -22,20 +22,25 @@ while true; do
     read -p "$(output ${YELLOW} "What bootloader do you want to use? [G]rub, or [S]ystem-Boot?: ")" boot
     case $boot in
     S | s)
+        if [ -d /sys/firmware/efi ]; then
+            output ${LIGHT_RED} "Systemd-Boot only supports BIOS firmware! Please select something else!"
+            continue
+        fi
+
         banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
-        bootctl --path=/boot install
+        bootctl --path=/efi install
         output ${YELLOW} "Creating Boot Configurations"
         microcode_hook=""
         if [ "$microcode" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
         if [ "$microcode" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
-        sed -i '/timeout/s/^#//g' /boot/loader/loader.conf
-        sed -i '/default/s/^/#/g' /boot/loader/loader.conf
-        echo "default arch-*.conf" >> /boot/loader/loader.conf
-        touch /boot/loader/entries/arch-latest.conf
-        echo "title  ArchLinux" >> /boot/loader/entries/arch-latest.conf
-        echo "linux   /vmlinuz-linux" >> /boot/loader/entries/arch-latest.conf
-        echo "initrd  ${microcode_hook}" >> /boot/loader/entries/arch-latest.conf
-        echo "initrd  /initramfs-linux.img" >> /boot/loader/entries/arch-latest.conf
+        sed -i '/timeout/s/^#//g' /efi/loader/loader.conf
+        sed -i '/default/s/^/#/g' /efi/loader/loader.conf
+        echo "default arch-*.conf" >> /efi/loader/loader.conf
+        touch /efi/loader/entries/arch-latest.conf
+        echo "title  ArchLinux" >> /efi/loader/entries/arch-latest.conf
+        echo "linux   /vmlinuz-linux" >> /efi/loader/entries/arch-latest.conf
+        echo "initrd  ${microcode_hook}" >> /efi/loader/entries/arch-latest.conf
+        echo "initrd  /initramfs-linux.img" >> /efi/loader/entries/arch-latest.conf
         root_uuid="$(findmnt -no UUID -T /)"
         root_flags="root=UUID=${root_uuid}"
         swap_flags=""
@@ -57,8 +62,8 @@ while true; do
 
             if [ "$use_btrfs" = "yes" ]; then
                 output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
-                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o btrfs_map_physical.c
-                gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
+                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
+                gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
                 offset=`sudo ${SCRIPT_DIR}/btrfs_map_physical /mnt/swap/swapfile`
                 offset_arr=(`echo ${offset}`)
                 offset_pagesize=(`getconf PAGESIZE`)
@@ -78,6 +83,8 @@ while true; do
         banner ${LIGHT_PURPLE} "Installing GRUB"
         installPac "grub efibootmgr"
         if [[ -d "/sys/firmware/efi" ]]; then
+            grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
+        else
             grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
         fi
         output ${YELLOW} "Creating Boot Configurations"
@@ -96,8 +103,8 @@ while true; do
 
             if [ "$use_btrfs" = "yes" ]; then
                 output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
-                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o $SCRIPT_DIR}/btrfs_map_physical.c
-                gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
+                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
+                gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
                 offset=`sudo ${SCRIPT_DIR}/btrfs_map_physical /mnt/swap/swapfile`
                 offset_arr=(`echo ${offset}`)
                 offset_pagesize=(`getconf PAGESIZE`)
@@ -112,7 +119,12 @@ while true; do
 
         sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
         output ${YELLOW} "Rebuilding GRUB..."
-        grub-mkconfig -o /boot/grub/grub.cfg
+
+        if [[ -d "/sys/firmware/efi" ]]; then
+            grub-mkconfig -o /efi/grub/grub.cfg
+        else
+            grub-mkconfig -o /boot/grub/grub.cfg
+        fi
         break;;
     *) output ${LIGHT_RED} "Invalid input" ;;
     esac
