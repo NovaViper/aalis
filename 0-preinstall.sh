@@ -6,10 +6,10 @@ use_swap=""
 use_btrfs=""
 is_laptop=""
 diskUUID=""
-RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
 RAM_MB=$(expr $RAM_KB / 1024)
 RAM_GB=$(expr $RAM_MB / 1024)
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
 mkdir ${SCRIPT_DIR}/logs

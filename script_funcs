@@ -170,7 +170,7 @@ function test_compare_versions() {
 #   $2:     the disk's name
 function makeFilesystems(){
     if [[ "${2}" =~ "nvme" ]]; then # If the boot drive is an NVMe drive
-        no_defrag="yes"
+        no_defrag="yes" # don't use autodefrag for btrfs parttions
         if [[ "${1}" = "uefi" ]]; then
             BOOT_DRIVE="${2}p1"
             ROOT_DRIVE="${2}p2"
@@ -179,7 +179,8 @@ function makeFilesystems(){
             ROOT_DRIVE="${2}p3"
         fi
     else
-        if [[ $(cat /sys/block${2}/queue/rotational) == 0 ]]; then # If the device uses rotation, if it returns 0, then it has to be an SSD since SSDs do not rotate, so make it not use autodefrag
+        DISK_NAME=$(sed 's|/dev/||g' <(echo ${2}))
+        if [[ $(cat /sys/block/${DISK_NAME}/queue/rotational) == 0 ]]; then # If the device uses rotation, if it returns 0, then it has to be an SSD (or a VM) since SSDs (or VMs) do not rotate, so make it not use autodefrag
             no_defrag="yes"
         fi
 

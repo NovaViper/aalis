@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Variable Declarations
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
 touch ${SCRIPT_DIR}/logs/postinstall.log
@@ -31,8 +31,8 @@ while true; do
         bootctl --path=/efi install
         output ${YELLOW} "Creating Boot Configurations"
         microcode_hook=""
-        if [ "$microcode" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
-        if [ "$microcode" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
+        if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
+        if [ "$microcode_type" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
         sed -i '/timeout/s/^#//g' /efi/loader/loader.conf
         sed -i '/default/s/^/#/g' /efi/loader/loader.conf
         echo "default arch-*.conf" >> /efi/loader/loader.conf

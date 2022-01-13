@@ -6,16 +6,16 @@ is_touchscreen=""
 use_graphics=""
 use_bluetooth=""
 shell_type=""
-shell_type_root=""
-shell_type_plugins=""
+root_use_shell_type=""
+use_shell_type_plugins=""
 term_editor=""
-term_editor_plugins=""
+use_term_editor_plugins=""
 use_lean_config=""
 use_dracula_theme=""
-microcode=""
-minimal_mode=""
-desktopenv=""
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+microcode_type=""
+use_minimal_install_mode=""
+desktop_env=""
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
 touch ${SCRIPT_DIR}/logs/setup.log
@@ -35,13 +35,13 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 
-if [[ "yes" == $(askYesNo "Would you like to install in minimal mode?") ]]; then minimal_mode="yes"; fi
+if [[ "yes" == $(askYesNo "Would you like to install in minimal mode?") ]]; then use_minimal_install_mode="yes"; fi
 
 if [[ "yes" == $(askYesNo "Would you like to install the Dracula theme?") ]]; then use_dracula_theme="yes"; fi
 
 banner ${LIGHT_PURPLE} "Configuring Pacman"
 sed -i 's/^#Color/Color/' /etc/pacman.conf # Enable colored output
-if [[ "$minimal_mode" != "yes" ]]; then sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf; fi # Enable 32bit library fr Steam
+if [[ "$use_minimal_install_mode" != "yes" ]]; then sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf; fi # Enable 32bit library fr Steam
 sed -i 's/^#Para/Para/' /etc/pacman.conf # Enable Parallel downloading for faster installation
 pacman -Syu
 
@@ -113,29 +113,29 @@ while true; do
 
         if [[ "yes" == $(askYesNo "Would you like to make the root user use ZSH?") ]]; then
             output ${YELLOW} "Changing root shell"
-            shell_type_root="yes"
+            root_use_shell_type="yes"
             chsh -s /bin/zsh
         fi
 
         #Minimal Selection for ZSH, asks user if they want to use predefined configurations or just start off blank
-        if [[ "$minimal_mode" != "yes" ]]; then
+        if [[ "$use_minimal_install_mode" != "yes" ]]; then
             if [[ "yes" == $(askYesNo "Would you like to use NovaViper's ZSH settings and plugins?") ]]; then
                 output ${YELLOW} "Adding NovaViper's ZSH Settings"
                 installPac "fzf subversion"
-                shell_type_plugins="yes"
+                use_shell_type_plugins="yes"
 
                 #Place zshrc files in skel folder so users can get them
                 mkdir -p /etc/skel/.config/zsh
                 cp ${SCRIPT_DIR}/zshrc /etc/skel/.config/zsh/.zshrc
 
                 # Add custom ZSH config for root user if prompted
-                if [[ "$shell_type_root" == "yes" ]]; then
+                if [[ "$root_use_shell_type" == "yes" ]]; then
                     cp ${SCRIPT_DIR}/zshrc /etc/zsh/zshrc
                 fi
             else
                 if [[ "yes" == $(askYesNo "Would you like to use a lean ZSH configuration with a few plugins? (autosuggestion,syntax highlighting,autocompletion,history search)") ]]; then
                     output ${YELLOW} "Adding Minimal ZSH Settings"
-                    shell_type_plugins="yes"
+                    use_shell_type_plugins="yes"
                     use_lean_config="yes"
 
                     #Place zshrc files in skel folder so users can get them
@@ -143,7 +143,7 @@ while true; do
                     cp ${SCRIPT_DIR}/zshrc_min /etc/skel/.config/zsh/.zshrc
 
                     # Add custom ZSH config for root user if prompted
-                    if [[ "$shell_type_root" == "yes" ]]; then
+                    if [[ "$root_use_shell_type" == "yes" ]]; then
                         cp ${SCRIPT_DIR}/zshrc_min /etc/zsh/zshrc
                     fi
                 else
@@ -159,7 +159,7 @@ while true; do
 
         if [[ "yes" == $(askYesNo "Would you like to make the root user use Fish?") ]]; then
             output ${YELLOW} "Changing root shell"
-            shell_type_root="yes"
+            root_use_shell_type="yes"
             chsh -s /bin/fish
         fi
         break;;
@@ -184,10 +184,10 @@ while true; do
         mkdir -p /etc/skel/.config/nvim
 
         # Minimal selection for Neovim
-        if [[ "$minimal_mode" != "yes" ]]; then
+        if [[ "$use_minimal_install_mode" != "yes" ]]; then
             if [[ "yes" == $(askYesNo "Would you like to use NovaViper's Neovim settings and plugins?") ]]; then
                 output ${YELLOW} "Adding NovaViper's Neovim Settings"
-                term_editor_plugins="yes"
+                use_term_editor_plugins="yes"
 
                 #Place neovim files in skel folder so users can get them
                 cp ${SCRIPT_DIR}/init.vim /etc/skel/.config/nvim/init.vim
@@ -195,7 +195,7 @@ while true; do
             else
                 if [[ "yes" == $(askYesNo "Would you like to use a lean Neovim configuration with a few plugins? (vim-airline, vim-fugitive, vim-gitgutter)") ]]; then
                     output ${YELLOW} "Adding Minimal Neovim Settings"
-                    term_editor_plugins="yes"
+                    use_term_editor_plugins="yes"
                     use_lean_config="yes"
 
                     #Place neovim files in skel folder so users can get them
@@ -276,12 +276,12 @@ while true; do
     case $processor in
     I | i)
         output ${YELLOW} "========= Installing Intel Microcode ========="
-        microcode="intel"
+        microcode_type="intel"
         installPac "intel-ucode"
         break;;
     A | a)
         output ${YELLOW} "========= Installing AMD Microcode ========="
-        microcode="amd"
+        microcode_type="amd"
         installPac "amd-ucode"
         break;;
     *) output ${LIGHT_RED} "Invalid input";;
@@ -366,7 +366,7 @@ while true; do
         output ${YELLOW} "========= Installing Intel Graphics ========="
         installPac "xf86-video-intel mesa"
 
-        if [[ "$minimal_mode" != "yes" ]]; then
+        if [[ "$use_minimal_install_mode" != "yes" ]]; then
             output ${YELLOW} "Installing Intel Vulkan packages for Steam"
             installPac "vulkan-intel vulkan-driver lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools"
         fi
@@ -374,7 +374,7 @@ while true; do
     A | a)
         output ${YELLOW} "========= Installing AMD Graphics ========="
         installPac "xf86-video-amdgpu mesa"
-        if [[ "$minimal_mode" != "yes" ]]; then
+        if [[ "$use_minimal_install_mode" != "yes" ]]; then
             while true; do
                 read -p "$(output ${YELLOW}"Are you using a [A]MD GPU or a [R]eadon GPU? ")" subgpu
                 case $subgpu in
@@ -395,7 +395,7 @@ while true; do
         output ${YELLOW} "========= Installing Nvidia Graphics ========="
         installPac "nvidia nvidia-utils nvidia-settings"
 
-        if [[ "$minimal_mode" != "yes" ]]; then
+        if [[ "$use_minimal_install_mode" != "yes" ]]; then
             output ${YELLOW} "Installing Nvidia Vulkan packages for Steam"
             installPac "lib32-nvidia-utils vulkan-tools i2c-tools vulkan-driver"
         fi
@@ -404,7 +404,7 @@ while true; do
     esac
 done
 
-if [[ "$minimal_mode" != "yes" ]]; then
+if [[ "$use_minimal_install_mode" != "yes" ]]; then
     #Font packs install
     output ${YELLOW} "====== Installing font packs ======"
     installPac "dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
@@ -432,7 +432,7 @@ while true; do
     case $de in
     X | x) # XFCE
         output ${YELLOW} "Installing XFCE and basic desktop apps"
-        desktopenv="xfce"
+        desktop_env="xfce"
         installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies arc-gtk-theme arc-icon-theme file-roller catfish xreader gparted pavucontrol qalculate-gtk deluge-gtk baobab"
         systemctl enable lightdm
         output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
@@ -452,7 +452,7 @@ while true; do
 
     G | g) # Gnome
         output ${YELLOW} "Installing Gnome and basic desktop apps"
-        desktopenv="gnome"
+        desktop_env="gnome"
         installPac "xorg gdm gnome gnome-extra gnome-tweaks arc-gtk-theme arc-icon-theme file-roller gparted pavucontrol qalculate-gtk transmission-gtk baobab"
         systemctl enable gdm
         output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
@@ -467,7 +467,7 @@ while true; do
 
     K | k) # KDE
         output ${YELLOW} "Installing KDE and basic desktop apps"
-        desktopenv="kde"
+        desktop_env="kde"
         installPac "xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools"
         systemctl enable sddm
         output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
@@ -493,7 +493,7 @@ while true; do
 
     C | c) #Cinnamon
         output ${YELLOW} "Installing Cinnamon and basic desktop apps"
-        desktopenv="cinnamon"
+        desktop_env="cinnamon"
         installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader"
         systemctl enable lightdm
         output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
@@ -517,18 +517,20 @@ fi
 
 
 output ${LIGHT_BLUE} "Saving Parameters for final step"
-if [[ "${users[@]}" ]]; then echo "users=$users" >> ${SCRIPT_DIR}/sysconfig.conf; fi
-echo "microcode=$microcode" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "use_graphics=$use_graphics" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "desktopenv=$desktopenv" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "is_touchscreen=$is_touchscreen" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "shell_type=$shell_type" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "shell_type_plugins=$shell_type_plugins" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "term_editor=$term_editor" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "term_editor_plugins=$term_editor_plugins" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "use_lean_config=$use_lean_config" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "use_dracula_theme=$use_dracula_theme" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "minimal_mode=$minimal_mode" >> ${SCRIPT_DIR}/sysconfig.conf
+if [[ "${users[@]}" ]]; then echo "users=$users"            >> ${SCRIPT_DIR}/sysconfig.conf; fi
+echo "is_touchscreen=$is_touchscreen"                       >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_graphics=$use_graphics"                           >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_bluetooth=$use_bluetooth"                         >> ${SCRIPT_DIR}/sysconfig.conf
+echo "shell_type=$shell_type"                               >> ${SCRIPT_DIR}/sysconfig.conf
+echo "root_use_shell_type=$root_use_shell_type"             >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_shell_type_plugins=$use_shell_type_plugins"       >> ${SCRIPT_DIR}/sysconfig.conf
+echo "term_editor=$term_editor"                             >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_term_editor_plugins=$use_term_editor_plugins"     >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_lean_config=$use_lean_config"                     >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_dracula_theme=$use_dracula_theme"                 >> ${SCRIPT_DIR}/sysconfig.conf
+echo "microcode_type=$microcode_type"                       >> ${SCRIPT_DIR}/sysconfig.conf
+echo "use_minimal_install_mode=$use_minimal_install_mode"   >> ${SCRIPT_DIR}/sysconfig.conf
+echo "desktop_env=$desktop_env"                             >> ${SCRIPT_DIR}/sysconfig.conf
 
 
 if [ $(whoami) = "root"  ];

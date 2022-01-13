@@ -2,9 +2,9 @@
 
 set -e # Make script fail if something fails
 
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-VERSION=3.0.1-rc1
-ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
+VERSION=3.1.0-rc1 # The current version of the script
+ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt) # URL of script's current version on the main branch
 
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
 # is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
@@ -40,7 +40,8 @@ fi
 
 bash 0-preinstall.sh
 arch-chroot /mnt /root/aalis/1-setup.sh
-source /mnt/root/aalis/sysconfig.conf
+if [ -f /mnt/root/aalis/sysconfig.conf ]; then source /mnt/root/aalis/sysconfig.conf; else output ${LIGHT_RED} "Cannot find /mnt/root/aalis/sysconfig.conf, cannot continue!"; sleep 2; exit 1; fi
+
 for i in "${users[@]}"; do
     output ${YELLOW} "Running user setup for $i"
     arch-chroot /mnt /usr/bin/runuser -u $i -- /home/$i/aalis/2-user.sh

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #Variable declarations
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
 touch ${SCRIPT_DIR}/logs/user.log
@@ -35,7 +35,7 @@ output ${YELLOW} "Installing ssh-agent Systemd Service"
 installYay "systemd-ssh-agent"
 sudo systemctl --user enable ssh-agent.service
 
-if [[ "$shell_type" == "zsh" && "$shell_type_plugins" == "yes" ]]; then
+if [[ "$shell_type" == "zsh" && "$use_shell_type_plugins" == "yes" ]]; then
     output ${YELLOW} "Installing ZSH Plugin Manager"
     installYay "zinit-git"
 
@@ -46,7 +46,7 @@ if [[ "$shell_type" == "zsh" && "$shell_type_plugins" == "yes" ]]; then
 fi
 
 
-if [[ "$term_editor" == "neovim" && "$term_editor_plugins" == "yes" ]]; then
+if [[ "$term_editor" == "neovim" && "$use_term_editor_plugins" == "yes" ]]; then
     output ${YELLOW} "Installing Neovim Plugin Manager"
     installYay "neovim-plug-git"
 fi
@@ -77,7 +77,7 @@ if [[ "$use_swap" == "yes"  ]]; then
 fi
 
 #DE Specific Install
-if [[ "$desktopenv" == "xfce"  ]]; then
+if [[ "$desktop_env" == "xfce"  ]]; then
     output ${YELLOW} "Installing XFCE specific AUR packages"
     installYay "gnome-ssh-askpass3 menulibre mugshot"
     if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
@@ -88,7 +88,7 @@ if [[ "$desktopenv" == "xfce"  ]]; then
         installYay "libinput-gestures"
     fi
 
-elif [[ "$desktopenv" == "gnome"  ]]; then
+elif [[ "$desktop_env" == "gnome"  ]]; then
     output ${YELLOW} "Installing Gnome specific AUR packages"
     installYay "gnome-ssh-askpass3 menulibre mugshot"
     if [[ "$is_laptop" == "yes" ]]; then
@@ -96,7 +96,7 @@ elif [[ "$desktopenv" == "gnome"  ]]; then
         installYay "libinput-gestures"
     fi
 
-elif [[ "$desktopenv" == "kde"  ]]; then
+elif [[ "$desktop_env" == "kde"  ]]; then
     output ${YELLOW} "Installing KDE specific packages"
     installYay "kde-servicemenus-pdf rootactions-servicemenu"
     if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
@@ -111,7 +111,7 @@ elif [[ "$desktopenv" == "kde"  ]]; then
         installYay "libinput-gestures"
     fi
 
-elif [[ "$desktopenv" == "cinnamon"  ]]; then
+elif [[ "$desktop_env" == "cinnamon"  ]]; then
     output ${YELLOW} "Installing Cinnamon specific packages"
     installYay "gnome-ssh-askpass3 menulibre mugshot"
     if [[ "$is_laptop" == "yes" ]]; then

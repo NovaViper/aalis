@@ -4,12 +4,14 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
-Version 3.0.1
+Version 3.1.0
 * Fixed issue where `btrfs_map_physical` script could not be during installation
 ^ Made EFI partition smaller
 ^ Systemd-boot menu now only works for UEFI and not BIOS
 ^ UEFI ESP partition is under /efi, which expands bootloader compatability and fix any other pitfalls of using /boot on UEFI systems
 ^ The script will accordingly install the ESP partition depending on firmware type (BIOS will still use /boot while UEFI will use /efi)
+^ Made core install variables more readable, skipped to v3.1.0 due to such a crucial change
+^ Script now checks if sysconfig.conf file is present after first two stages (pre- and presne setup)
 
 Version 3.0.0
 + Added ability for users to specify their own packages to install during installation (suports pacman and AUR packages, and will automatically discover what packages is under the arch repos and which ones are not)
