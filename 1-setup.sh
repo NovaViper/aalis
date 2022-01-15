@@ -320,6 +320,20 @@ if [[ "$use_graphics" == "yes" ]]; then
         A | a)
             output ${YELLOW} "========= Installing PulseAudio protocols ========="
             installPac "alsa-utils pulseaudio pulseaudio-alsa pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad"
+            if [ "$use_bluetooth" == "yes" ]; then
+                output ${YELLOW} "Installing Extra Bluetooth package for PulseAudio"
+                installPac "pulseaudio-bluetooth"
+            fi
+
+            if [[ "yes" == $(askYesNo "Do you want to enable PulseAudio's echo-cancel module for Echo/Noise Cancellation of microphone inputs?")  ]]; then
+                output ${YELLOW} "Enabling echo-cancel module"
+                echo ".ifexists module-echo-cancel.so" >> /etc/pulse/default.pa
+                echo "load-module module-echo-cancel aec_method=webrtc source_name=echocancel sink_name=echocancel1" >> /etc/pulse/default.pa
+                echo "set-default-source echocancel" >> /etc/pulse/default.pa
+                echo "set-default-sink echocancel1" >> /etc/pulse/default.pa
+                echo ".endif" >> /etc/pulse/default.pa
+            fi
+
             break;;
         W | w)
             output ${YELLOW} "========= Installing PipeWire protocols ========="

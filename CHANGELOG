@@ -5,29 +5,32 @@ KEY:
 ^ = enhancement/change
 
 Version 3.1.0
++ Added ability to enable PulseAudio's echo/noise cancelling module
++ Added pulseaudio-bluetooth package to fix issues with PulseAudio and Bluetooth
 * Fixed issue where lower case 'i' wouldn't select Neovim installer
 * Fixed vimrc and other XDG-based vim directories not being properly setup inside the skeleton folder for users
 * Fixed issue where `btrfs_map_physical` script could not be during installation
+^ Script now looks for beta build versions with 'rc' instead of just 'r'
 ^ Version Checker now asks if you want to continue
 ^ Made EFI partition smaller
 ^ Systemd-boot menu now only works for UEFI and not BIOS
-^ UEFI ESP partition is under /efi, which expands bootloader compatability and fix any other pitfalls of using /boot on UEFI systems
+^ UEFI ESP partition is under /efi, which expands bootloader compatibility and fix any other pitfalls of using /boot on UEFI systems
 ^ The script will accordingly install the ESP partition depending on firmware type (BIOS will still use /boot while UEFI will use /efi)
 ^ Made core install variables more readable, skipped to v3.1.0 due to such a crucial change
-^ Script now checks if sysconfig.conf file is present after first two stages (pre- and presne setup)
+^ Script now checks if sysconfig.conf file is present after first two stages (pre-install and setup)
 
 Version 3.0.0
-+ Added ability for users to specify their own packages to install during installation (suports pacman and AUR packages, and will automatically discover what packages is under the arch repos and which ones are not)
-+ Added terminal editor selector menu, now you can select from nano, vim, neovim (with a mode where the user can select between a lean configuration with a few plugins, my own fully featured configuration, and no premade configurations), and emacs!
-+ Added shell selector menu, now you can choose between bash, zsh (also with a configuration submenu selection as like neovim), and fish!
++ Added ability for users to specify their own packages to install during installation (supports pacman and AUR packages, and will automatically discover what packages is under the arch repos and which ones are not)
++ Added terminal editor selector menu, now you can select from nano, vim, neovim (with a mode where the user can select between a lean configuration with a few plugins, my own fully featured configuration, and no pre-made configurations), and emacs!
++ Added shell selector menu, now you can choose between bash, zsh (also with a configuration sub-menu selection as like neovim), and fish!
 + Added Dracula Theme selection menu, now you can specify if you want the Dracula theme or not
-+ Added Minimal install option, this removes alot of unnecessary menus (like the configuration menus for neovim and zsh), and packages!
++ Added Minimal install option, this removes a lot of unnecessary menus (like the configuration menus for neovim and zsh), and packages!
 + Added optional Emacs installer, for those who use Emacs for other things other than text editing
 + Added kdeplasma-addons package for KDE, so you can get the full featured set of KDE widgets
 + Added systemd-ssh-agent AUR package, so now enabling ssh-agent via systemd is much easier on the script
 + Added libinput-guestures package, for better touchpad gestures for laptop users!
-+ Seperated many packages into their own menu
-- Sudo users no longer can use sudo without being promtped by a password first.
++ Separated many packages into their own menu
+- Sudo users no longer can use sudo without being prompted by a password first.
 * Fixed issue with emacs zsh plugin not working properly
 * Fixed systemctl not starting services for users
 ^ Disk format menu now doesn't stop the script when you tell it not to format a disk, it just simply reloads the menu and lets you select again
@@ -38,9 +41,9 @@ Verion 2.1.1
 
 Version 2.1.0
 + Added version checker
-+ Added figlet terminal fonts for inital prompt
++ Added figlet terminal fonts for initial prompt
 + Added ability for script to set SSH_ASKPASS variable
-+ Added abilty for script to set Kwallet parameters in SDDM
++ Added ability for script to set Kwallet parameters in SDDM
 * Fixed missing "" block around font size banner text
 
 
@@ -51,8 +54,8 @@ Version 2.0.1 - commit 3c990481
 Version 2.0.0 - commit dfa56ed7
 + Complete rewrite! Made it more like ArchTitus (which allows for AUR packages to be installed)
 + Made AUR package install possible
-+ Now can auto retreive UUIDs needed for Systemdboot/GRUB LUKS encryption
-+ Streamlined alot of code into script_funcs file, now the main scripts look cleaner
++ Now can auto retrieve UUIDs needed for Systemdboot/GRUB LUKS encryption
++ Streamlined a lot of code into script_funcs file, now the main scripts look cleaner
 + Installer questions now save options into sysconfig.conf file
 + Now it's possible to rerun the script, it goes and cleans the disk you selected before it installs again
 + Now the script can partition the disks automatically!
@@ -60,12 +63,12 @@ Version 2.0.0 - commit dfa56ed7
 + Added FZF for ZSH
 + Added Reflector timer
 + Now can configure the partitions for either UEFI or BIOS
-* Updated mount parameters for BTRFS, which fixed the space_cache compatability in the December 2021 ArchLinux ISO
+* Updated mount parameters for BTRFS, which fixed the space_cache compatibility in the December 2021 ArchLinux ISO
 - Removed precomplied Yay package, since now the script can install Yay directly
 - Removed minimal ZSH since now the script can install the needed plugin managers
 - Removed Neofetch package, this slowed down the ZSH prompt quite a bit
-- Removed LVM support, this turned out to be alot harder to automae
+- Removed LVM support, this turned out to be a lot harder to automate
 
 
 Version 1.0.0
-+ Inital release
++ Initial release

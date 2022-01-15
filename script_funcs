@@ -99,7 +99,7 @@ function compare_versions() {
     [[ "$1" == "$2" ]] && return 0
 
     # Local variables
-    local regex="^(.*)-r([0-9]*)$" va1=() vr1=0 va2=() vr2=0 len i IFS="."
+    local regex="^(.*)-rc([0-9]*)$" va1=() vr1=0 va2=() vr2=0 len i IFS="."
 
     # Split version strings into arrays, extract trailing revisions
     if [[ "$1" =~ ${regex} ]]; then
