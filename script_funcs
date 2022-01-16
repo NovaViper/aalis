@@ -15,30 +15,30 @@ NC='\e[39m' # No Color
 #### Functions to be used across the main scripts
 #################################################
 function installPac(){
-    pacman -S --needed --noconfirm $1
+	pacman -S --needed --noconfirm $1
 }
 
 function installPacSoft(){
-    pacman -S --needed $1
+	pacman -S --needed $1
 }
 
 function removePac(){
-    pacman -R --noconfirm $1
+	pacman -R --noconfirm $1
 }
 
 function installYay(){
-    yay -S --needed --noconfirm --batchinstall $1
+	yay -S --needed --noconfirm --batchinstall $1
 }
 
 function installYaySoft(){
-    yay -S --needed $1
+	yay -S --needed $1
 }
 
 # Parameters:
 #   $1:     Color code
 #   $2:     String to output
 function output(){
-    echo -e "${1}${2}${NC}"
+	echo -e "${1}${2}${NC}"
 }
 
 # Found this function on Unix StackExchange (https://unix.stackexchange.com/a/70616/502849 by manatwork), modded it to create a centered banner made of - without edges and optional second color for text
@@ -51,37 +51,46 @@ function output(){
 #   Single line banners are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line"``
 #   Multi line banners are generated like `banner ${COLOR} ${OPTIONAL_SECONDCOLOR} "first line" "second line" "third line"`
 function banner() {
-    local s=("${@:3}") b w
-    local second_color=$2
-    if [[ ! "$second_color" =~ "\e[".* ]]; then #If the second color isn't declared, then make the function use only the first color declared
-        local s=("${@:2}") b w
-        local second_color=$1
-    fi
+	local s=("${@:3}") b w
+	local second_color=$2
+	if [[ ! "$second_color" =~ "\e[".* ]]; then #If the second color isn't declared, then make the function use only the first color declared
+		local s=("${@:2}") b w
+		local second_color=$1
+	fi
 
-    for l in "${s[@]}"; do
-        ((w<${#l})) && { b="         $l         "; w="${#l}"; }
-    done
-    echo -ne $1
-    echo "-${b//?/-}-"
-    for l in "${s[@]}"; do
-        printf '         %s%*s%s         \n' "$(echo -ne $second_color)" "-$w" "$l" "$(echo -ne $1)"
-    done
-    echo -e "-${b//?/-}-${NC}"
+	for l in "${s[@]}"; do
+		((w<${#l})) && { b="         $l         "; w="${#l}"; }
+	done
+	echo -ne $1
+	echo "-${b//?/-}-"
+	for l in "${s[@]}"; do
+		printf '         %s%*s%s         \n' "$(echo -ne $second_color)" "-$w" "$l" "$(echo -ne $1)"
+	done
+	echo -e "-${b//?/-}-${NC}"
 }
 
 # Ask a yes/no question
 # Parameters
-#   $color:     Optional color code to change the output's color
-#   $1:         The outputted question
+#   $1:     Optional color code to change the output's color
+#   $2:     The question to be outputted
+#
+# Example:
+# With color speified: `askYesNo ${LIGHT_GREEN} "Some question here"`
+# Without color speified: `askYesNo "Some question here"`
 function askYesNo() {
-    color=${2:-${YELLOW}}
-    while true; do
-        read -p "$(output $color "$1 ([Y]es or [N]o): ")" REPLY
-        case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
-            y|yes|Y|YES|Yes) echo "yes" ; break;;
-            n|no|N|NO|No)    echo "no" ; break;;
-        esac
-    done
+	local s=("${@:2}")
+	local color=$1
+	if [[ ! "$color" =~ "\e[".* ]]; then #If the color isn't declared, then make the function use the $YELLOW color and use $1 as the question string
+		local s=("${@:1}")
+		local color=${YELLOW}
+	fi
+	while true; do
+		read -p "$(output $color "$s ([Y]es or [N]o): ")" REPLY
+		case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
+			y|yes|Y|YES|Yes) echo "yes" ; break;;
+			n|no|N|NO|No)    echo "no" ; break;;
+		esac
+	done
 }
 
 ###################################################################################
@@ -94,73 +103,72 @@ function askYesNo() {
 # Based on: https://stackoverflow.com/a/4025065 by Dennis Williamson
 function compare_versions() {
 
-    # Trivial v1 == v2 test based on string comparison
-    [[ "$1" == "$2" ]] && return 0
+	# Trivial v1 == v2 test based on string comparison
+	[[ "$1" == "$2" ]] && return 0
 
-    # Local variables
-    local regex="^(.*)-r([0-9]*)$" va1=() vr1=0 va2=() vr2=0 len i IFS="."
+	# Local variables
+	local regex="^(.*)-rc([0-9]*)$" va1=() vr1=0 va2=() vr2=0 len i IFS="."
 
-    # Split version strings into arrays, extract trailing revisions
-    if [[ "$1" =~ ${regex} ]]; then
-        va1=(${BASH_REMATCH[1]})
-        [[ -n "${BASH_REMATCH[2]}" ]] && vr1=${BASH_REMATCH[2]}
-    else
-        va1=($1)
-    fi
-    if [[ "$2" =~ ${regex} ]]; then
-        va2=(${BASH_REMATCH[1]})
-        [[ -n "${BASH_REMATCH[2]}" ]] && vr2=${BASH_REMATCH[2]}
-    else
-        va2=($2)
-    fi
+	# Split version strings into arrays, extract trailing revisions
+	if [[ "$1" =~ ${regex} ]]; then
+		va1=(${BASH_REMATCH[1]})
+		[[ -n "${BASH_REMATCH[2]}" ]] && vr1=${BASH_REMATCH[2]}
+	else
+		va1=($1)
+	fi
+	if [[ "$2" =~ ${regex} ]]; then
+		va2=(${BASH_REMATCH[1]})
+		[[ -n "${BASH_REMATCH[2]}" ]] && vr2=${BASH_REMATCH[2]}
+	else
+		va2=($2)
+	fi
 
-    # Bring va1 and va2 to same length by filling empty fields with zeros
-    (( ${#va1[@]} > ${#va2[@]} )) && len=${#va1[@]} || len=${#va2[@]}
-    for ((i=0; i < len; ++i)); do
-        [[ -z "${va1[i]}" ]] && va1[i]="0"
-        [[ -z "${va2[i]}" ]] && va2[i]="0"
-    done
+	# Bring va1 and va2 to same length by filling empty fields with zeros
+	(( ${#va1[@]} > ${#va2[@]} )) && len=${#va1[@]} || len=${#va2[@]}
+	for ((i=0; i < len; ++i)); do
+		[[ -z "${va1[i]}" ]] && va1[i]="0"
+		[[ -z "${va2[i]}" ]] && va2[i]="0"
+	done
 
-    # Append revisions, increment length
-    va1+=($vr1)
-    va2+=($vr2)
-    len=$((len+1))
+	# Append revisions, increment length
+	va1+=($vr1)
+	va2+=($vr2)
+	len=$((len+1))
 
-    # *** DEBUG ***
-    #echo "TEST: '${va1[@]} (?) ${va2[@]}'"
+	# *** DEBUG ***
+	#echo "TEST: '${va1[@]} (?) ${va2[@]}'"
 
-    # Compare version elements, check if v1 > v2 or v1 < v2
-    for ((i=0; i < len; ++i)); do
-        if (( 10#${va1[i]} > 10#${va2[i]} )); then
-            return 1
-        elif (( 10#${va1[i]} < 10#${va2[i]} )); then
-            return 2
-        fi
-    done
+	# Compare version elements, check if v1 > v2 or v1 < v2
+	for ((i=0; i < len; ++i)); do
+		if (( 10#${va1[i]} > 10#${va2[i]} )); then
+			return 1
+		elif (( 10#${va1[i]} < 10#${va2[i]} )); then
+			return 2
+		fi
+	done
 
-    # All elements are equal, thus v1 == v2
-    return 0
+	# All elements are equal, thus v1 == v2
+	return 0
 }
 
 # Test compare_versions [$1: version string 1, $2: version string 2, $3: expected result]
 function test_compare_versions() {
-    compare_versions "$1" "$2"
-    case $? in
-        0) op="==" ;;
-        1) op=">" ;;
-        2) op="<" ;;
-    esac
+	compare_versions "$1" "$2"
+	case $? in
+		0) op="==" ;;
+		1) op=">" ;;
+		2) op="<" ;;
+	esac
 
-    if [[ "$op" == "==" ]]; then
-        output ${LIGHT_GREEN} "The script is update to date!"
-    elif [[ "$op" == "<" ]]; then
-        output ${RED} "The script is out of date; the latest version is v${2}! The script will continue on, however it is recommended that you update the script!"
-    elif [[ "$op" == ">" ]]; then
-        output ${YELLOW} "The script is ahead of the release version, so this must be a release canidate or a beta build!"
-    else
-        banner ${RED} "SOMETHING HAS GONE WRONG, PLEASE REPORT THIS ERROR TO THE PROJECT'S GITLAB"
-    fi
-
+	if [[ "$op" == "==" ]]; then
+		output ${LIGHT_GREEN} "The script is update to date!"
+	elif [[ "$op" == "<" ]]; then
+		output ${RED} "The script is out of date; the latest version is v${2}! The script will continue on, however it is recommended that you update the script!"
+	elif [[ "$op" == ">" ]]; then
+		output ${YELLOW} "The script is ahead of the release version, so this must be a release canidate or a beta build!"
+	else
+		banner ${RED} "SOMETHING HAS GONE WRONG, PLEASE REPORT THIS ERROR TO THE PROJECT'S GITLAB"
+	fi
 }
 ###################################################################################
 
@@ -169,155 +177,194 @@ function test_compare_versions() {
 #   $1:     the boot mode
 #   $2:     the disk's name
 function makeFilesystems(){
-    if [[ "${2}" =~ "nvme" ]]; then
-        if [[ "${1}" = "uefi" ]]; then
-            BOOT_DRIVE="${2}p1"
-            ROOT_DRIVE="${2}p2"
-        else
-            BOOT_DRIVE="${2}p"
-            ROOT_DRIVE="${2}p3"
-        fi
-    else
-        if [[ "${1}" = "uefi" ]]; then
-            BOOT_DRIVE="${2}1"
-            ROOT_DRIVE="${2}2"
-        else
-            BOOT_DRIVE="${2}2"
-            ROOT_DRIVE="${2}3"
-        fi
-    fi
+	if [[ "${2}" =~ "nvme" ]]; then # If the boot drive is an NVMe drive
+		output ${YELLOW} "Disabling autodefrag for btrfs"
+		no_defrag="yes" # don't use autodefrag for btrfs parttions
+		if [[ "${1}" = "uefi" ]]; then
+			BOOT_DRIVE="${2}p1"
+			ROOT_DRIVE="${2}p2"
+		else
+			BOOT_DRIVE="${2}p"
+			ROOT_DRIVE="${2}p3"
+		fi
+	else
+		DISK_NAME=$(sed 's|/dev/||g' <(echo ${2}))
+		if [[ $(cat /sys/block/${DISK_NAME}/queue/rotational) == 0 ]]; then # If the device uses rotation, if it returns 0, then it has to be an SSD (or a VM) since SSDs (or VMs) do not rotate, so make it not use autodefrag
+			output ${YELLOW} "Disabling autodefrag for btrfs"
+			no_defrag="yes"
+		fi
 
-    # If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
-    if [[ "$use_crypt" = "yes"  ]]; then
-        cryptsetup -y -v luksFormat ${ROOT_DRIVE}
-        cryptsetup open ${ROOT_DRIVE} cryptroot
-        diskUUID=$(blkid -s UUID -o value ${ROOT_DRIVE})
-        ROOT_DRIVE="/dev/mapper/cryptroot"
-    fi
+		if [[ "${1}" = "uefi" ]]; then
+			BOOT_DRIVE="${2}1"
+			ROOT_DRIVE="${2}2"
+		else
+			BOOT_DRIVE="${2}2"
+			ROOT_DRIVE="${2}3"
+		fi
+	fi
 
-    #Create the filesystems
-    output ${YELLOW} "Creating Filesystems..."
-    mkfs.fat -F32 ${BOOT_DRIVE} # Create boot filesystem
-    while true; do
-        read -p "$(output ${YELLOW} "What filesystem do you want to use? Ext4, BTRFS: ")"
-        case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
-            EXT4 | ext4)
-                banner ${LIGHT_PURPLE} "Setting up EXT4 filesystems"
-                mkfs.ext4 ${ROOT_DRIVE}
+	# These variables will be used later on in the installation process
+	final_boot_drive=$BOOT_DRIVE
+	final_root_drive=$ROOT_DRIVE
 
-                output ${YELLOW} "Mounting everything"
-                mount ${ROOT_DRIVE} /mnt
+	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
+	if [[ "$use_crypt" = "yes"  ]]; then
+		cryptsetup -y -v luksFormat ${ROOT_DRIVE}
+		cryptsetup open ${ROOT_DRIVE} cryptroot
+		disk_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE})
+		ROOT_DRIVE="/dev/mapper/cryptroot"
+	fi
 
-                mkdir -p /mnt/boot
-                mount ${BOOT_DRIVE} /mnt/boot
+	# Create the filesystems
+	output ${YELLOW} "Creating Filesystems..."
+	mkfs.fat -F32 ${BOOT_DRIVE} # Create boot filesystem
+	while true; do
+		read -p "$(output ${YELLOW} "What filesystem do you want to use? Ext4, BTRFS: ")"
+		case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
+			EXT4 | ext4)
+				banner ${LIGHT_PURPLE} "Setting up EXT4 filesystems"
+				mkfs.ext4 ${ROOT_DRIVE}
 
-                if [[ "$use_swap" = "yes"  ]]; then
-                    output ${YELLOW} "Lets make the swapfile!"
-                    mkdir -p /mnt/swap
-                    touch /mnt/swap/swapfile
-                    dd if=/dev/zero of=/mnt/swap/swapfile bs=1M count=$((RAM_MB*2)) status=progress
-                    chmod 600 /mnt/swap/swapfile
-                    mkswap /mnt/swap/swapfile
-                fi
-                output ${LIGHT_GREEN} "Done creating the filesystems!"
-                break;;
-            BTRFS | btrfs)
-                banner ${LIGHT_PURPLE} "Setting up BTRFS filesystems"
-                use_btrfs="yes"
-                mkfs.btrfs ${ROOT_DRIVE} -f
-                mount ${ROOT_DRIVE} /mnt
-                btrfs subvolume create /mnt/@
-                btrfs subvolume create /mnt/@home
-                btrfs subvolume create /mnt/@cache
-                btrfs subvolume create /mnt/@log
-                if [[ "$use_swap" = "yes"  ]]; then btrfs subvolume create /mnt/@swap; fi
+				output ${YELLOW} "Mounting everything"
+				mount ${ROOT_DRIVE} /mnt
 
-                #Unmount /mnt so we can start mounting the btrfs subvolumes
-                umount /mnt
+				if [ -d /sys/firmware/efi ]; then
+					output ${YELLOW} "Configuring boot partition for UEFI"
+					mkdir -p /mnt/efi
+					mount ${BOOT_DRIVE} /mnt/efi
+				else
+					output ${YELLOW} "Configuring boot partition for BIOS"
+					mkdir -p /mnt/boot
+					mount ${BOOT_DRIVE} /mnt/boot
+				fi
 
-                output ${YELLOW} "Mounting everything"
-                # Mount root partition
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
-                #Make paths for mounts
-                mkdir -p /mnt/{boot,home,var}
-                mkdir -p /mnt/var/{cache,log}
+				if [[ "$use_swap" = "yes"  ]]; then
+					output ${YELLOW} "Lets make the swapfile!"
+					mkdir -p /mnt/swap
+					touch /mnt/swap/swapfile
+					dd if=/dev/zero of=/mnt/swap/swapfile bs=1M count=$((RAM_MB*2)) status=progress
+					chmod 600 /mnt/swap/swapfile
+					mkswap /mnt/swap/swapfile
+				fi
+				output ${LIGHT_GREEN} "Done creating the filesystems!"
+				break;;
+			BTRFS | btrfs)
+				banner ${LIGHT_PURPLE} "Setting up BTRFS filesystems"
+				use_btrfs="yes"
+				mkfs.btrfs ${ROOT_DRIVE} -f
+				mount ${ROOT_DRIVE} /mnt
+				btrfs subvolume create /mnt/@
+				btrfs subvolume create /mnt/@home
+				btrfs subvolume create /mnt/@cache
+				btrfs subvolume create /mnt/@log
+				if [[ "$use_swap" = "yes"  ]]; then btrfs subvolume create /mnt/@swap; fi
 
-                #Mount Every other partition
-                mount ${BOOT_DRIVE} /mnt/boot
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
-                mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
-                if [[ "$use_swap" = "yes"  ]]; then
-                    output ${YELLOW} "Lets make the swapfile!"
-                    mkdir -p /mnt/swap
-                    mount -o defaults,noatime,subvol=@swap ${ROOT_DRIVE} /mnt/swap
-                    truncate -s 0 /mnt/swap/swapfile
-                    chattr +C /mnt/swap/swapfile
-                    btrfs property set /mnt/swap/swapfile compression none
-                    dd if=/dev/zero of=/mnt/swap/swapfile bs=1M count=$((RAM_MB*2)) status=progress
-                    chmod 600 /mnt/swap/swapfile
-                    mkswap /mnt/swap/swapfile
-                fi
-                output ${LIGHT_GREEN} "Done creating the filesystems!"
-                break;;
-            *) output ${LIGHT_RED} "Invalid input";;
-        esac
-    done
+				# Unmount /mnt so we can start mounting the btrfs subvolumes
+				umount /mnt
+
+				output ${YELLOW} "Mounting everything"
+				if [[ "$no_defrag" == "yes" ]]; then
+					mount -o defaults,noatime,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+				else
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+				fi
+
+
+				if [ -d /sys/firmware/efi ]; then
+					output ${YELLOW} "Configuring boot partition for UEFI"
+					mkdir -p /mnt/efi
+					mount ${BOOT_DRIVE} /mnt/efi
+				else
+					output ${YELLOW} "Configuring boot partition for BIOS"
+					mkdir -p /mnt/boot
+					mount ${BOOT_DRIVE} /mnt/boot
+				fi
+
+				# Mount Every other partition
+				mkdir -p /mnt/{home,var}
+				mkdir -p /mnt/var/{cache,log}
+
+				if [[ "$no_defrag" == "yes" ]]; then
+					mount -o defaults,noatime,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
+					mount -o defaults,noatime,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
+					mount -o defaults,noatime,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+				else
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+				fi
+
+				if [[ "$use_swap" = "yes"  ]]; then
+					output ${YELLOW} "Lets make the swapfile!"
+					mkdir -p /mnt/swap
+					mount -o defaults,noatime,subvol=@swap ${ROOT_DRIVE} /mnt/swap
+					truncate -s 0 /mnt/swap/swapfile
+					chattr +C /mnt/swap/swapfile
+					btrfs property set /mnt/swap/swapfile compression none
+					dd if=/dev/zero of=/mnt/swap/swapfile bs=1M count=$((RAM_MB*2)) status=progress
+					chmod 600 /mnt/swap/swapfile
+					mkswap /mnt/swap/swapfile
+				fi
+				output ${LIGHT_GREEN} "Done creating the filesystems!"
+				break;;
+			*) output ${LIGHT_RED} "Invalid input";;
+		esac
+	done
 }
 
 addRootPass(){
-    while true; do
-        read -s -p "$(output ${YELLOW} "Create a new password for Root user: ")" password
-        echo
-        read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
-        echo
-        if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo "!!!!!!!THIS IS AN EXTREME SECURITY RISK AS ANYONE CAN AND WILL MODIFY YOUR SYSTEM AT ANY TIME!!!!!!! Do you accept the consequences??" ${LIGHT_RED})  ]]; then
-            if [[ "yes" == $(askYesNo "Are you REALLY sure? !!!!!IT IS HIGHLY RECOMMENDED NOT TO DO THIS FOR THE ROOT USER!!!!!" ${LIGHT_RED}) ]]; then break; fi
-        fi
-        [ "$password" = "$password2" ] && break
-        output ${LIGHT_RED} "Please try again"
-    done
+	while true; do
+		read -s -p "$(output ${YELLOW} "Create a new password for Root user: ")" password
+		echo
+		read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
+		echo
+		if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo ${LIGHT_RED} "THIS IS AN EXTREME SECURITY RISK AS ANYONE CAN AND WILL MODIFY YOUR SYSTEM AT ANY TIME!!!!!!! Do you accept the consequences??")  ]]; then
+			if [[ "yes" == $(askYesNo ${LIGHT_RED} "Are you REALLY sure? IT IS HIGHLY RECOMMENDED NOT TO DO THIS FOR THE ROOT USER!!!!!") ]]; then break; fi
+		fi
+		[ "$password" = "$password2" ] && break
+		output ${LIGHT_RED} "Please try again"
+	done
 
-    output ${YELLOW} "Adding password for root user..."
-    echo "root:$password" | chpasswd
+	output ${YELLOW} "Adding password for root user..."
+	echo "root:$password" | chpasswd
 }
 
 addUserPass(){
-    while true; do
-        read -p "$(output ${YELLOW} "Please enter a name for the new user: ")" username
-        if [[ ! "${users[*]}" =~ "${username}" ]]; then
-            read -s -p "$(output ${YELLOW} "Create a new password for $username: ")" password
-            echo
-            read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
-            echo
-            if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo "!!!!!This is a security risk and allows anyone to get into your machine!!!!!! Do you accept the consequences?" ${LIGHT_RED})  ]]; then
-                if [[ "yes" == $(askYesNo "Are you REALLY sure?" ${LIGHT_RED}) ]]; then break; fi
-            fi
-            [ "$password" = "$password2" ] && break
-            output ${LIGHT_RED} "Please try again"
-        elif [[ "${username}" =~ "root" ]]; then
-            output ${LIGHT_RED} "You cannot create a user with the name root, as it is reserved for the admin account. Please try a different username."
-        else
-            output ${LIGHT_RED} "You already entered this username, please enter a new username"
-        fi
-    done
+	while true; do
+		read -p "$(output ${YELLOW} "Please enter a name for the new user: ")" username
+		if [[ ! "${users[*]}" =~ "${username}" ]]; then
+			read -s -p "$(output ${YELLOW} "Create a new password for $username: ")" password
+			echo
+			read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
+			echo
+			if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo ${LIGHT_RED} "!!!!!This is a security risk and allows anyone to get into your machine!!!!!! Do you accept the consequences?")  ]]; then
+				if [[ "yes" == $(askYesNo ${LIGHT_RED} "Are you REALLY sure?") ]]; then break; fi
+			fi
+			[ "$password" = "$password2" ] && break
+			output ${LIGHT_RED} "Please try again"
+		elif [[ "${username}" =~ "root" ]]; then
+			output ${LIGHT_RED} "You cannot create a user with the name root, as it is reserved for the admin account. Please try a different username."
+		else
+			output ${LIGHT_RED} "You already entered this username, please enter a new username"
+		fi
+	done
 
-    output ${YELLOW} "Creating $username..."
-    useradd -m -G wheel $username
-    users+=("$username")
-    #echo "DEBUG: ${users[@]}"
-    echo "$username:$password" | chpasswd
+	output ${YELLOW} "Creating $username..."
+	useradd -m -G wheel $username
+	users+=("$username")
+	#echo "DEBUG: ${users[@]}"
+	echo "$username:$password" | chpasswd
 }
 
 function getSubvolInfo() {
-    # If the system can find the root subvolume with btrfs show, AND find both its name and ID
-    if name=$(LC_ALL=C btrfs sub show / | LC_ALL=C grep -aPom1 '^\s*Name:\s*\K\S.*') && id=$(LC_ALL=C btrfs sub show / | LC_ALL=C grep -aPom1 '^\s*Subvolume ID:\s*\K\d+$')
-    then # Then we save the values for later use and continue
-        rootsubvol_name=${name}
-        rootsubvol_id=${id}
-    else
-        output ${LIGHT_RED} "Can't determine name and/or id" >&2
-        sleep 2
-        exit 1;
-    fi
+	# If the system can find the root subvolume with btrfs show, AND find both its name and ID
+	if name=$(LC_ALL=C btrfs sub show / | LC_ALL=C grep -aPom1 '^\s*Name:\s*\K\S.*') && id=$(LC_ALL=C btrfs sub show / | LC_ALL=C grep -aPom1 '^\s*Subvolume ID:\s*\K\d+$')
+	then # Then we save the values for later use and continue
+		rootsubvol_name=${name}
+		rootsubvol_id=${id}
+	else
+		output ${LIGHT_RED} "Can't determine name and/or id" >&2
+		sleep 2
+		exit 1;
+	fi
 }

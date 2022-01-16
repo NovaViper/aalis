@@ -2,10 +2,14 @@
 
 set -e # Make script fail if something fails
 
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-VERSION=3.0.0
-ONLINE_VERSION=$(curl -s https://gitlab.com/NovaViper/aalis/-/raw/main/VERSION.txt)
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
+VERSION=3.1.0 # The current version of the script
 
+if [[ "$VERSION" == "*-*" ]]; then
+	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
+else
+	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d ':' -f2 | cut -d'"' -f2 | cut -d '-' -f1 | cut -d 'r' -f1 | cut -d 'c' -f1)
+fi
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
 # is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
 echo -ne "\e[95m"
@@ -18,8 +22,14 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 banner ${LIGHT_PURPLE} "Checking if script is update to date..."
-test_compare_versions $VERSION $ONLINE_VERSION || : # use null utility from POSIX to make the script not immedately exist if the script is a beta build or outdated
-sleep 5
+
+if [[ "$VERSION" == "*-*" ]]; then
+	output ${LIGHT_BLUE} "Checking for Stable/Beta Builds..."
+else
+	output ${LIGHT_BLUE} "Checking for Stable Builds..."
+fi
+test_compare_versions $VERSION $ONLINE_VERSION || :
+sleep 2
 
 banner ${LIGHT_PURPLE} "Setting font size"
 installPac "terminus-font figlet"
@@ -32,22 +42,23 @@ output ${LIGHT_BLUE} "$(figlet -kctWf big "AALIS v${VERSION}")"
 output ${LIGHT_RED} "$(figlet -kctWf term "~ AALIS in Archland! ~")"
 
 if [[ "yes" == $(askYesNo "Would you like to start the install?") ]]; then
-    output ${LIGHT_GREEN} "Lets begin the installation!"
+	output ${LIGHT_GREEN} "Lets begin the installation!"
 else
-    output  ${LIGHT_RED} "Ok, I'm leaving then!"
-    exit 1;
+	output  ${LIGHT_RED} "Ok, I'm leaving then!"
+	exit 1;
 fi
 
 bash 0-preinstall.sh
 arch-chroot /mnt /root/aalis/1-setup.sh
-source /mnt/root/aalis/sysconfig.conf
-for i in "${users[@]}"; do
-    output ${YELLOW} "Running user setup for $i"
-    arch-chroot /mnt /usr/bin/runuser -u $i -- /home/$i/aalis/2-user.sh
+if [ -f /mnt/root/aalis/sysconfig.conf ]; then source /mnt/root/aalis/sysconfig.conf; else output ${LIGHT_RED} "Cannot find /mnt/root/aalis/sysconfig.conf, cannot continue!"; sleep 2; exit 1; fi
 
-    output ${YELLOW} "Sending $i install log to main script directory"
-    cp /mnt/home/$i/aalis/logs/user.log /mnt/root/aalis/logs/user_$i.log
-    rm -Rf /mnt/home/$i/aalis
+for i in "${users[@]}"; do
+	output ${YELLOW} "Running user setup for $i"
+	arch-chroot /mnt /usr/bin/runuser -u $i -- /home/$i/aalis/2-user.sh
+
+	output ${YELLOW} "Sending $i install log to main script directory"
+	cp /mnt/home/$i/aalis/logs/user.log /mnt/root/aalis/logs/user_$i.log
+	rm -Rf /mnt/home/$i/aalis
 done
 arch-chroot /mnt /root/aalis/3-post-setup.sh
 

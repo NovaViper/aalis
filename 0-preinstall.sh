@@ -6,10 +6,12 @@ use_swap=""
 use_btrfs=""
 is_laptop=""
 diskUUID=""
-RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+final_boot_disk=""
+final_root_drive=""
+RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
 RAM_MB=$(expr $RAM_KB / 1024)
 RAM_GB=$(expr $RAM_MB / 1024)
-SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
 mkdir ${SCRIPT_DIR}/logs
@@ -42,32 +44,32 @@ if [[ "yes" == $(askYesNo "Do you want to use SWAP?") ]]; then use_swap="yes"; f
 if [[ "yes" == $(askYesNo "Do you want to use LUKS disk encryption?") ]]; then use_crypt="yes"; fi
 
 while true; do
-    banner ${LIGHT_PURPLE} "Select a disk you wish to format"
-    lsblk
-    echo "Please enter disk to work on: (example /dev/sda)"
-    read DISK
-    if [[ ! "$DISK" = "" ]]; then
-        output ${LIGHT_RED} "THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK!"
-        if [[ "no" == $(askYesNo "Are you sure you want to continue?" ${LIGHT_RED}) ]]; then
-            output ${LIGHT_RED} "Ok.. going to ask again"
-            clear
-        else
-            output ${LIGHT_GREEN} "Ok, lets get started!"
-            sleep 1
-            clear
-            break;
-        fi
-    else
-        output ${LIGHT_RED} "This cannot be blank! Please try again!"
-    fi
+	banner ${LIGHT_PURPLE} "Select a disk you wish to format"
+	lsblk
+	echo "Please enter disk to work on: (example /dev/sda)"
+	read DISK
+	if [[ ! "$DISK" = "" ]]; then
+		output ${LIGHT_RED} "THIS WILL FORMAT AND DELETE ALL DATA ON THE DISK!"
+		if [[ "no" == $(askYesNo ${LIGHT_RED} "Are you sure you want to continue?") ]]; then
+			output ${LIGHT_RED} "Ok.. going to ask again"
+			clear
+		else
+			output ${LIGHT_GREEN} "Ok, lets get started!"
+			sleep 1
+			clear
+			break;
+		fi
+	else
+		output ${LIGHT_RED} "This cannot be blank! Please try again!"
+	fi
 done
 
 banner ${LIGHT_PURPLE} "Formatting disk, ${DISK}..."
 if grep -qs '/mnt' /proc/mounts; then
-    output ${YELLOW} "Attempting to unmount"
-    umount /mnt/* -A -f
-    umount /mnt -A -f
-    if [[ "$use_crypt" = "yes"  ]]; then cryptsetup close cryptroot; fi
+	output ${YELLOW} "Attempting to unmount"
+	umount /mnt/* -A -f
+	umount /mnt -A -f
+	if [[ "$use_crypt" = "yes"  ]]; then cryptsetup close cryptroot; fi
 fi
 
 sgdisk -Z ${DISK} # Destory everything on disk
@@ -75,32 +77,32 @@ sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 
 # Create partitions
 if [ -d /sys/firmware/efi ]; then
-    output ${YELLOW} "Creating UEFI boot partition"
-    sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
-    sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
-    makeFilesystems "uefi" ${DISK}
+	output ${YELLOW} "Creating UEFI boot partition"
+	sgdisk -n 1::+250M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
+	sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
+	makeFilesystems "uefi" ${DISK}
 else
-    output ${YELLOW} "Creating BIOS boot partition"
-    sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
-    sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
-    sgdisk -n 3::-0 --typecode=3:8300 ${DISK} # partition 3 (Root), default start, remaining
-    sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
-    makeFilesystems "bios" ${DISK}
+	output ${YELLOW} "Creating BIOS boot partition"
+	sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
+	sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
+	sgdisk -n 3::-0 --typecode=3:8300 ${DISK} # partition 3 (Root), default start, remaining
+	sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
+	makeFilesystems "bios" ${DISK}
 fi
 
 output ${LIGHT_BLUE} "Lets confirm if everything is correct!"
 output ${YELLOW} "Checking if there are any mounts"
 if ! grep -qs '/mnt' /proc/mounts; then
-    output ${LIGHT_RED} "Drive is not mounted; cannot continue!"
-    exit 1
+	output ${LIGHT_RED} "Drive is not mounted; cannot continue!"
+	exit 1
 fi
 
 lsblk
 if [[ "yes" = $(askYesNo "Does everything look correct?") ]]; then
-    output ${LIGHT_GREEN} "Ok, moving on!"
+	output ${LIGHT_GREEN} "Ok, moving on!"
 else
-    output ${LIGHT_RED} "Something must've gone wrong, cannot continue!"
-    exit 1
+	output ${LIGHT_RED} "Something must've gone wrong, cannot continue!"
+	exit 1
 fi
 
 banner ${LIGHT_PURPLE} "Arch Install on Main Drive"
@@ -114,19 +116,23 @@ output ${LIGHT_BLUE} "Lets do one final check to make sure your mounts are corre
 sleep 5
 cat /mnt/etc/fstab
 if [[ "yes" = $(askYesNo "Does your fstab look correct?") ]]; then
-    output ${LIGHT_GREEN} "Ok, moving on!"
+	output ${LIGHT_GREEN} "Ok, moving on!"
 else
-    output ${LIGHT_RED} "Something must've gone wrong, cannot continue!"
-    exit 1
+	output ${LIGHT_RED} "Something must've gone wrong, cannot continue!"
+	exit 1
 fi
 
 output ${LIGHT_BLUE} "Saving Parameters for next step"
 touch ${SCRIPT_DIR}/sysconfig.conf
-echo "use_swap=$use_swap" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "use_btrfs=$use_btrfs" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "use_crypt=$use_crypt" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "is_laptop=$is_laptop" >> ${SCRIPT_DIR}/sysconfig.conf
-echo "diskUUID=$diskUUID" >> ${SCRIPT_DIR}/sysconfig.conf
+cat <<-EOF >> ${SCRIPT_DIR}/sysconfig.conf
+use_swap=$use_swap
+use_btrfs=$use_btrfs
+use_crypt=$use_crypt
+is_laptop=$is_laptop
+diskUUID=$diskUUID
+final_boot_drive=$final_boot_drive
+final_root_drive=$final_root_drive
+EOF
 cp -R ${SCRIPT_DIR} /mnt/root/aalis
 
 banner ${LIGHT_GREEN} "SYSTEM READY FOR 1-setup"
