@@ -8,7 +8,7 @@ VERSION=3.1.0 # The current version of the script
 if [[ "$VERSION" == "*-*" ]]; then
 	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
 else
-	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d ':' -f2 | cut -d'"' -f2 | cut -d '-' -f1 | cut -d 'r' -f1 | cut -d 'c' -f1)
+	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d ':' -f2 | cut -d'"' -f2 | tr -d -- "-rc")
 fi
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
 # is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
