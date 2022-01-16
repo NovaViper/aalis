@@ -81,7 +81,7 @@ installPac "xdg-user-dirs xdg-utils"
 xdg-user-dirs-update # Updates user directories for XDG Specification
 
 output ${YELLOW} "Configuring environment variables for XDG specification"
-cat <<-EOF >> /etc/profile
+cat <<-"EOF" >> /etc/profile
 
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_CACHE_HOME="$HOME/.cache"

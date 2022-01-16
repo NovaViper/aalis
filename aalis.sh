@@ -3,9 +3,13 @@
 set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
-VERSION=3.1.0-rc5 # The current version of the script
-ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
+VERSION=3.1.0-rc6 # The current version of the script
 
+if [[ "$VERSION" == "*-*" ]]; then
+	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
+else
+	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d ':' -f2 | cut -d'"' -f2 | cut -d '-' -f1 | cut -d 'r' -f1 | cut -d 'c' -f1)
+fi
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
 # is present. This file under any circumstance SHOULD NEVER be missing or really bad things will happen.
 echo -ne "\e[95m"
@@ -18,7 +22,14 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 banner ${LIGHT_PURPLE} "Checking if script is update to date..."
+
+if [[ "$VERSION" == "*-*" ]]; then
+	output ${LIGHT_BLUE} "Checking for Stable/Beta Builds..."
+else
+	output ${LIGHT_BLUE} "Checking for Stable Builds..."
+fi
 test_compare_versions $VERSION $ONLINE_VERSION || :
+sleep 2
 
 banner ${LIGHT_PURPLE} "Setting font size"
 installPac "terminus-font figlet"

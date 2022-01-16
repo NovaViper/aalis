@@ -49,7 +49,7 @@ while true; do
 
 		if [ "$use_crypt" = "yes" ]; then
 			output ${YELLOW} "Configuring bootloader for disks encryption"
-			root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
+			root_flags="cryptdevice=UUID=${disk_uuid}:cryptroot ${root_flags}"
 		fi
 
 		if [ "$use_btrfs" = "yes" ]; then
@@ -85,9 +85,11 @@ while true; do
 		banner ${LIGHT_PURPLE} "Installing GRUB"
 		installPac "grub efibootmgr"
 		if [[ -d "/sys/firmware/efi" ]]; then
-			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
+			output ${YELLOW} "Installing GRUB for UEFI"
+			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${final_boot_drive}
 		else
-			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
+			output ${YELLOW} "Installing GRUB for BIOS"
+			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${final_boot_drive}
 		fi
 		output ${YELLOW} "Creating Boot Configurations"
 		root_uuid="$(findmnt -no UUID -T /)"
@@ -96,7 +98,7 @@ while true; do
 
 		if [ "$use_crypt" = "yes" ]; then
 			output ${YELLOW} "Configuring bootloader for disks encryption"
-			root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
+			root_flags="cryptdevice=UUID=${disk_uuid}:cryptroot ${root_flags}"
 		fi
 
 		if [ "$use_swap" = "yes" ]; then
@@ -121,12 +123,7 @@ while true; do
 
 		sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
 		output ${YELLOW} "Rebuilding GRUB..."
-
-		if [[ -d "/sys/firmware/efi" ]]; then
-			grub-mkconfig -o /efi/grub/grub.cfg
-		else
-			grub-mkconfig -o /boot/grub/grub.cfg
-		fi
+		grub-mkconfig -o /boot/grub/grub.cfg
 		break;;
 	*) output ${LIGHT_RED} "Invalid input" ;;
 	esac

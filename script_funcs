@@ -203,11 +203,15 @@ function makeFilesystems(){
 		fi
 	fi
 
+	# These variables will be used later on in the installation process
+	final_boot_drive=$BOOT_DRIVE
+	final_root_drive=$ROOT_DRIVE
+
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
 		cryptsetup -y -v luksFormat ${ROOT_DRIVE}
 		cryptsetup open ${ROOT_DRIVE} cryptroot
-		diskUUID=$(blkid -s UUID -o value ${ROOT_DRIVE})
+		disk_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE})
 		ROOT_DRIVE="/dev/mapper/cryptroot"
 	fi
 
