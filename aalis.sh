@@ -3,7 +3,7 @@
 set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
-VERSION=3.1.0-rc4 # The current version of the script
+VERSION=3.1.0-rc5 # The current version of the script
 ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
 
 # Preflight check ensures that the script_funcs file (which holds all primary functions for the script)
@@ -31,10 +31,10 @@ output ${LIGHT_BLUE} "$(figlet -kctWf big "AALIS v${VERSION}")"
 output ${LIGHT_RED} "$(figlet -kctWf term "~ AALIS in Archland! ~")"
 
 if [[ "yes" == $(askYesNo "Would you like to start the install?") ]]; then
-    output ${LIGHT_GREEN} "Lets begin the installation!"
+	output ${LIGHT_GREEN} "Lets begin the installation!"
 else
-    output  ${LIGHT_RED} "Ok, I'm leaving then!"
-    exit 1;
+	output  ${LIGHT_RED} "Ok, I'm leaving then!"
+	exit 1;
 fi
 
 bash 0-preinstall.sh
@@ -42,12 +42,12 @@ arch-chroot /mnt /root/aalis/1-setup.sh
 if [ -f /mnt/root/aalis/sysconfig.conf ]; then source /mnt/root/aalis/sysconfig.conf; else output ${LIGHT_RED} "Cannot find /mnt/root/aalis/sysconfig.conf, cannot continue!"; sleep 2; exit 1; fi
 
 for i in "${users[@]}"; do
-    output ${YELLOW} "Running user setup for $i"
-    arch-chroot /mnt /usr/bin/runuser -u $i -- /home/$i/aalis/2-user.sh
+	output ${YELLOW} "Running user setup for $i"
+	arch-chroot /mnt /usr/bin/runuser -u $i -- /home/$i/aalis/2-user.sh
 
-    output ${YELLOW} "Sending $i install log to main script directory"
-    cp /mnt/home/$i/aalis/logs/user.log /mnt/root/aalis/logs/user_$i.log
-    rm -Rf /mnt/home/$i/aalis
+	output ${YELLOW} "Sending $i install log to main script directory"
+	cp /mnt/home/$i/aalis/logs/user.log /mnt/root/aalis/logs/user_$i.log
+	rm -Rf /mnt/home/$i/aalis
 done
 arch-chroot /mnt /root/aalis/3-post-setup.sh
 

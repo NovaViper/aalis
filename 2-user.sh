@@ -18,8 +18,8 @@ output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
 if [[ $(sudo pacman -Qs --color always "emacs" | grep "local" | grep "emacs ") ]]; then
-    banner ${LIGHT_PURPLE} "Enabling Emacs User Systemd service"
-    sudo systemctl --user enable emacs
+	banner ${LIGHT_PURPLE} "Enabling Emacs User Systemd service"
+	sudo systemctl --user enable emacs
 fi
 
 banner ${LIGHT_PURPLE} "Installing AUR Software"
@@ -36,27 +36,27 @@ installYay "systemd-ssh-agent"
 sudo systemctl --user enable ssh-agent.service
 
 if [[ "$shell_type" == "zsh" && "$use_shell_type_plugins" == "yes" ]]; then
-    output ${YELLOW} "Installing ZSH Plugin Manager"
-    installYay "zinit-git"
+	output ${YELLOW} "Installing ZSH Plugin Manager"
+	installYay "zinit-git"
 
-    if [[ ! "$use_lean_config" == "yes" ]]; then
-        output ${YELLOW} "Installing Extra ZSH Packages for NovaViper's Configurations"
-        installYay "pfetch-git zinit-git ttf-meslo-nerd-font-powerlevel10k"
-    fi
+	if [[ ! "$use_lean_config" == "yes" ]]; then
+		output ${YELLOW} "Installing Extra ZSH Packages for NovaViper's Configurations"
+		installYay "pfetch-git zinit-git ttf-meslo-nerd-font-powerlevel10k"
+	fi
 fi
 
 
 if [[ "$term_editor" == "neovim" && "$use_term_editor_plugins" == "yes" ]]; then
-    output ${YELLOW} "Installing Neovim Plugin Manager"
-    installYay "neovim-plug-git"
+	output ${YELLOW} "Installing Neovim Plugin Manager"
+	installYay "neovim-plug-git"
 fi
 
 if [[ "$use_dracula_theme" == "yes" ]]; then
-    output ${YELLOW} "Installing main Dracula theme package"
-    installYay "ant-dracula-theme-git"
+	output ${YELLOW} "Installing main Dracula theme package"
+	installYay "ant-dracula-theme-git"
 
-    output ${YELLOW} "Installing QT apps Dracula theme package"
-    installYay "ant-dracula-kvantum-theme-git"
+	output ${YELLOW} "Installing QT apps Dracula theme package"
+	installYay "ant-dracula-kvantum-theme-git"
 fi
 
 output ${YELLOW} "Installing Pamac"
@@ -66,65 +66,65 @@ sleep 10
 installYaySoft "pamac-all"
 
 if [[ "$is_laptop" == "yes" ]]; then
-    output ${YELLOW} "Installing Laptop specific tools"
-    installYay "tlpui"
+	output ${YELLOW} "Installing Laptop specific tools"
+	installYay "tlpui"
 fi
 
 if [[ "$use_swap" == "yes"  ]]; then
-    output ${YELLOW} "Installing ZRAM modules"
-    installYay "zramd"
-    sudo systemctl enable zramd.service
+	output ${YELLOW} "Installing ZRAM modules"
+	installYay "zramd"
+	sudo systemctl enable zramd.service
 fi
 
 #DE Specific Install
 if [[ "$desktop_env" == "xfce"  ]]; then
-    output ${YELLOW} "Installing XFCE specific AUR packages"
-    installYay "gnome-ssh-askpass3 menulibre mugshot"
-    if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
-        installYay "xfce4-docklike-plugin-ng-git xfce4-windowck-plugin"
-    fi
-    if [[ "$is_laptop" == "yes" ]]; then
-        output ${YELLOW} "Installing extra libinput packages"
-        installYay "libinput-gestures"
-    fi
+	output ${YELLOW} "Installing XFCE specific AUR packages"
+	installYay "gnome-ssh-askpass3 menulibre mugshot"
+	if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
+		installYay "xfce4-docklike-plugin-ng-git xfce4-windowck-plugin"
+	fi
+	if [[ "$is_laptop" == "yes" ]]; then
+		output ${YELLOW} "Installing extra libinput packages"
+		installYay "libinput-gestures"
+	fi
 
 elif [[ "$desktop_env" == "gnome"  ]]; then
-    output ${YELLOW} "Installing Gnome specific AUR packages"
-    installYay "gnome-ssh-askpass3 menulibre mugshot"
-    if [[ "$is_laptop" == "yes" ]]; then
-        output ${YELLOW} "Installing extra libinput packages"
-        installYay "libinput-gestures"
-    fi
+	output ${YELLOW} "Installing Gnome specific AUR packages"
+	installYay "gnome-ssh-askpass3 menulibre mugshot"
+	if [[ "$is_laptop" == "yes" ]]; then
+		output ${YELLOW} "Installing extra libinput packages"
+		installYay "libinput-gestures"
+	fi
 
 elif [[ "$desktop_env" == "kde"  ]]; then
-    output ${YELLOW} "Installing KDE specific packages"
-    installYay "kde-servicemenus-pdf rootactions-servicemenu"
-    if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
-        installYay "plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git"
-    fi
-    if [[ "$use_dracula_theme" == "yes" ]]; then
-        output ${YELLOW} "Installing KDE specific Dracula theme package"
-        installYay "ant-dracula-kde-theme-git"
-    fi
-    if [[ "$is_laptop" == "yes" ]]; then
-        output ${YELLOW} "Installing GUI for Wacom drivers"
-        installYay "libinput-gestures"
-    fi
+	output ${YELLOW} "Installing KDE specific packages"
+	installYay "kde-servicemenus-pdf rootactions-servicemenu"
+	if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
+		installYay "plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git"
+	fi
+	if [[ "$use_dracula_theme" == "yes" ]]; then
+		output ${YELLOW} "Installing KDE specific Dracula theme package"
+		installYay "ant-dracula-kde-theme-git"
+	fi
+	if [[ "$is_laptop" == "yes" ]]; then
+		output ${YELLOW} "Installing extra libinput packages"
+		installYay "libinput-gestures"
+	fi
 
 elif [[ "$desktop_env" == "cinnamon"  ]]; then
-    output ${YELLOW} "Installing Cinnamon specific packages"
-    installYay "gnome-ssh-askpass3 menulibre mugshot"
-    if [[ "$is_laptop" == "yes" ]]; then
-        output ${YELLOW} "Installing GUI for Wacom drivers"
-        installYay "libinput-gestures"
-    fi
+	output ${YELLOW} "Installing Cinnamon specific packages"
+	installYay "gnome-ssh-askpass3 menulibre mugshot"
+	if [[ "$is_laptop" == "yes" ]]; then
+		output ${YELLOW} "Installing extra libinput packages"
+		installYay "libinput-gestures"
+	fi
 
 fi
 
 # Install user specified aur packages, filters out pacman packages from AUR packages
 if [ -f ${SCRIPT_DIR}/user_pkglist.txt ]; then
-    banner ${LIGHT_PURPLE} "Installing Additional User Packages"
-    installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
+	banner ${LIGHT_PURPLE} "Installing Additional User Packages"
+	installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
 fi
 
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"

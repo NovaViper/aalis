@@ -19,115 +19,117 @@ sleep 2
 
 banner ${LIGHT_PURPLE} "FINAL SETUP AND CONFIGURATION"
 while true; do
-    read -p "$(output ${YELLOW} "What bootloader do you want to use? [G]rub, or [S]ystem-Boot?: ")" boot
-    case $boot in
-    S | s)
-        if [ -d /sys/firmware/efi ]; then
-            output ${LIGHT_RED} "Systemd-Boot only supports BIOS firmware! Please select something else!"
-            continue
-        fi
+	read -p "$(output ${YELLOW} "What bootloader do you want to use? [G]rub, or [S]ystem-Boot?: ")" boot
+	case $boot in
+	S | s)
+		if [ -d /sys/firmware/efi ]; then
+			output ${LIGHT_RED} "Systemd-Boot only supports BIOS firmware! Please select something else!"
+			continue
+		fi
 
-        banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
-        bootctl --path=/efi install
-        output ${YELLOW} "Creating Boot Configurations"
-        microcode_hook=""
-        if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
-        if [ "$microcode_type" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
-        sed -i '/timeout/s/^#//g' /efi/loader/loader.conf
-        sed -i '/default/s/^/#/g' /efi/loader/loader.conf
-        echo "default arch-*.conf" >> /efi/loader/loader.conf
-        touch /efi/loader/entries/arch-latest.conf
-        echo "title  ArchLinux" >> /efi/loader/entries/arch-latest.conf
-        echo "linux   /vmlinuz-linux" >> /efi/loader/entries/arch-latest.conf
-        echo "initrd  ${microcode_hook}" >> /efi/loader/entries/arch-latest.conf
-        echo "initrd  /initramfs-linux.img" >> /efi/loader/entries/arch-latest.conf
-        root_uuid="$(findmnt -no UUID -T /)"
-        root_flags="root=UUID=${root_uuid}"
-        swap_flags=""
+		banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
+		bootctl --path=/efi install
+		output ${YELLOW} "Creating Boot Configurations"
+		microcode_hook=""
+		if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
+		if [ "$microcode_type" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
+		sed -i '/timeout/s/^#//g' /efi/loader/loader.conf
+		sed -i '/default/s/^/#/g' /efi/loader/loader.conf
+		echo "default arch-*.conf" >> /efi/loader/loader.conf
+		touch /efi/loader/entries/arch-latest.conf
+		cat <<-EOF >> /efi/loader/entries/arch-latest.conf
+		title  ArchLinux
+		linux   /vmlinuz-linux
+		initrd  ${microcode_hook}
+		initrd  /initramfs-linux.img
+		EOF
+		root_uuid="$(findmnt -no UUID -T /)"
+		root_flags="root=UUID=${root_uuid}"
+		swap_flags=""
 
-        if [ "$use_crypt" = "yes" ]; then
-            output ${YELLOW} "Configuring bootloader for disks encryption"
-            root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
-        fi
+		if [ "$use_crypt" = "yes" ]; then
+			output ${YELLOW} "Configuring bootloader for disks encryption"
+			root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
+		fi
 
-        if [ "$use_btrfs" = "yes" ]; then
-            output ${YELLOW} "Getting Root Subvolume Information..."
-            getSubvolInfo
-            root_flags="${root_flags} rootflags=subvolid=${rootsubvol_id},subvol=${rootsubvol_name}"
-        fi
+		if [ "$use_btrfs" = "yes" ]; then
+			output ${YELLOW} "Getting Root Subvolume Information..."
+			getSubvolInfo
+			root_flags="${root_flags} rootflags=subvolid=${rootsubvol_id},subvol=${rootsubvol_name}"
+		fi
 
-        if [ "$use_swap" = "yes" ]; then
-            output ${YELLOW} "Getting Swap file UUID"
-            swap_uuid="$(findmnt -no UUID -T /swap/swapfile)"
+		if [ "$use_swap" = "yes" ]; then
+			output ${YELLOW} "Getting Swap file UUID"
+			swap_uuid="$(findmnt -no UUID -T /swap/swapfile)"
 
-            if [ "$use_btrfs" = "yes" ]; then
-                output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
-                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
-                gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
-                offset=`sudo ${SCRIPT_DIR}/btrfs_map_physical /mnt/swap/swapfile`
-                offset_arr=(`echo ${offset}`)
-                offset_pagesize=(`getconf PAGESIZE`)
-                swap_offset=$(( offset_arr[25] / offset_pagesize ))
-            else
-                output ${YELLOW} "Calculating Swap offset for swap file..."
-                swap_offset="$(sudo filefrag -v /swap/swapfile | awk '{ if($1=="0:"){print substr($4, 1, length($4)-2)} }')"
-            fi
+			if [ "$use_btrfs" = "yes" ]; then
+				output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
+				curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
+				gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
+				offset=`${SCRIPT_DIR}/btrfs_map_physical /swap/swapfile`
+				offset_arr=(`echo ${offset}`)
+				offset_pagesize=(`getconf PAGESIZE`)
+				swap_offset=$(( offset_arr[25] / offset_pagesize ))
+			else
+				output ${YELLOW} "Calculating Swap offset for swap file..."
+				swap_offset="$(filefrag -v /swap/swapfile | awk '{ if($1=="0:"){print substr($4, 1, length($4)-2)} }')"
+			fi
 
-            swap_flags="resume=UUID=${swap_uuid} resume_offset=${swap_offset}"
-        fi
+			swap_flags="resume=UUID=${swap_uuid} resume_offset=${swap_offset}"
+		fi
 
-        output ${YELLOW} "Finishing creating configuration file for Systemd-Boot..."
-        echo "options rw ${root_flags} ${swap_flags}" >> /boot/loader/entries/arch-latest.conf
-        break;;
-    G | g)
-        banner ${LIGHT_PURPLE} "Installing GRUB"
-        installPac "grub efibootmgr"
-        if [[ -d "/sys/firmware/efi" ]]; then
-            grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
-        else
-            grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
-        fi
-        output ${YELLOW} "Creating Boot Configurations"
-        root_uuid="$(findmnt -no UUID -T /)"
-        root_flags="root=UUID=${root_uuid}"
-        swap_flags=""
+		output ${YELLOW} "Finishing creating configuration file for Systemd-Boot..."
+		echo "options rw ${root_flags} ${swap_flags}" >> /boot/loader/entries/arch-latest.conf
+		break;;
+	G | g)
+		banner ${LIGHT_PURPLE} "Installing GRUB"
+		installPac "grub efibootmgr"
+		if [[ -d "/sys/firmware/efi" ]]; then
+			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
+		else
+			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
+		fi
+		output ${YELLOW} "Creating Boot Configurations"
+		root_uuid="$(findmnt -no UUID -T /)"
+		root_flags="root=UUID=${root_uuid}"
+		swap_flags=""
 
-        if [ "$use_crypt" = "yes" ]; then
-            output ${YELLOW} "Configuring bootloader for disks encryption"
-            root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
-        fi
+		if [ "$use_crypt" = "yes" ]; then
+			output ${YELLOW} "Configuring bootloader for disks encryption"
+			root_flags="cryptdevice=UUID=${diskUUID}:cryptroot ${root_flags}"
+		fi
 
-        if [ "$use_swap" = "yes" ]; then
-            output ${YELLOW} "Getting Swap file UUID"
-            swap_uuid="$(findmnt -no UUID -T /swap/swapfile)"
+		if [ "$use_swap" = "yes" ]; then
+			output ${YELLOW} "Getting Swap file UUID"
+			swap_uuid="$(findmnt -no UUID -T /swap/swapfile)"
 
-            if [ "$use_btrfs" = "yes" ]; then
-                output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
-                curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
-                gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
-                offset=`sudo ${SCRIPT_DIR}/btrfs_map_physical /mnt/swap/swapfile`
-                offset_arr=(`echo ${offset}`)
-                offset_pagesize=(`getconf PAGESIZE`)
-                swap_offset=$(( offset_arr[25] / offset_pagesize ))
-            else
-                output ${YELLOW} "Calculating Swap offset for swap file..."
-                swap_offset="$(sudo filefrag -v /swap/swapfile | awk '{ if($1=="0:"){print substr($4, 1, length($4)-2)} }')"
-            fi
+			if [ "$use_btrfs" = "yes" ]; then
+				output ${YELLOW} "Calculating Swap offset for swapfile subvolume..."
+				curl https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c -o ${SCRIPT_DIR}/btrfs_map_physical.c
+				gcc -O2 -o ${SCRIPT_DIR}/btrfs_map_physical ${SCRIPT_DIR}/btrfs_map_physical.c
+				offset=`${SCRIPT_DIR}/btrfs_map_physical /swap/swapfile`
+				offset_arr=(`echo ${offset}`)
+				offset_pagesize=(`getconf PAGESIZE`)
+				swap_offset=$(( offset_arr[25] / offset_pagesize ))
+			else
+				output ${YELLOW} "Calculating Swap offset for swap file..."
+				swap_offset="$(filefrag -v /swap/swapfile | awk '{ if($1=="0:"){print substr($4, 1, length($4)-2)} }')"
+			fi
 
-            swap_flags="resume=UUID=${swap_uuid} resume_offset=${swap_offset}"
-        fi
+			swap_flags="resume=UUID=${swap_uuid} resume_offset=${swap_offset}"
+		fi
 
-        sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
-        output ${YELLOW} "Rebuilding GRUB..."
+		sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
+		output ${YELLOW} "Rebuilding GRUB..."
 
-        if [[ -d "/sys/firmware/efi" ]]; then
-            grub-mkconfig -o /efi/grub/grub.cfg
-        else
-            grub-mkconfig -o /boot/grub/grub.cfg
-        fi
-        break;;
-    *) output ${LIGHT_RED} "Invalid input" ;;
-    esac
+		if [[ -d "/sys/firmware/efi" ]]; then
+			grub-mkconfig -o /efi/grub/grub.cfg
+		else
+			grub-mkconfig -o /boot/grub/grub.cfg
+		fi
+		break;;
+	*) output ${LIGHT_RED} "Invalid input" ;;
+	esac
 done
 
 banner ${LIGHT_PURPLE} "Configuring mkinitcpio"
@@ -136,16 +138,16 @@ extra_hooks=""
 if [ "$use_swap" = "yes" ]; then extra_hooks="resume ${extra_hooks}"; fi
 
 if [ "$use_btrfs" = "yes" ]; then
-    extra_hooks="btrfs ${extra_hooks}"
-    sed -i '57s/.//' /etc/mkinitcpio.conf
+	extra_hooks="btrfs ${extra_hooks}"
+	sed -i '57s/.//' /etc/mkinitcpio.conf
 fi
 
 if [ "$use_crypt" = "yes" ]; then extra_hooks="encrypt ${extra_hooks}"; fi
 
 if [[ "${extra_hooks}" ]]; then
-    echo "Put these in HOOKS and delete this line after doing so: ${extra_hooks}" >> /etc/mkinitcpio.conf
-    output ${LIGHT_BLUE} "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
-    output ${LIGHT_BLUE} "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'btrfs' goes after 'filesystems', and finally, 'resume' goes at the very end of the paramter list"
-    output ${LIGHT_BLUE} "Be sure to run 'mkinitcpio -P' after adding the parameters! Your machine will not start properly if you skip doing this!"
-    sleep 5
+	echo "Put these in HOOKS and delete this line after doing so: ${extra_hooks}" >> /etc/mkinitcpio.conf
+	output ${LIGHT_BLUE} "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
+	output ${LIGHT_BLUE} "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'btrfs' goes after 'filesystems', and finally, 'resume' goes at the very end of the paramter list"
+	output ${LIGHT_BLUE} "Be sure to run 'mkinitcpio -P' after adding the parameters! Your machine will not start properly if you skip doing this!"
+	sleep 5
 fi

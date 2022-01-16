@@ -10,7 +10,12 @@ Version 3.1.0
 * Fixed issue where lower case 'i' wouldn't select Neovim installer
 * Fixed vimrc and other XDG-based vim directories not being properly setup inside the skeleton folder for users
 * Fixed issue where `btrfs_map_physical` script could not be during installation
+* Fixed critical bug where btrfs uuid retrieve portion for swap files during post install wasn't working properly!
+^ Tabify all lines!
+^ Used Heredoc EOFs for multiline echos
+^ YesNo questions now have the color variable set in the beginning of the function (so now it's askYesNo $COLOR $STRING and can be askYesNo $STRING)
 ^ Script now looks for beta build versions with 'rc' instead of just 'r'
+^ Script now uses GitLab's Releases API to retrieve latest version
 ^ Version Checker now asks if you want to continue
 ^ Made EFI partition smaller
 ^ Systemd-boot menu now only works for UEFI and not BIOS
