@@ -5,7 +5,7 @@ use_crypt=""
 use_swap=""
 use_btrfs=""
 is_laptop=""
-diskUUID=""
+disk_uuid=""
 final_boot_disk=""
 final_root_drive=""
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
@@ -129,7 +129,7 @@ use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
 is_laptop=$is_laptop
-diskUUID=$diskUUID
+disk_uuid=$disk_uuid
 final_boot_drive=$final_boot_drive
 final_root_drive=$final_root_drive
 EOF

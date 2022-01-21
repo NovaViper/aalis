@@ -4,6 +4,9 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 3.1.2
+^ Fixed critical typo that resulted in cryptroot UUID not being properly passed to the end
+
 Version 3.1.1
 + Added some more packages in user_pkglist.txt.example (for my own usage)
 + Added some more KDE specific packages that were originally missing into list of KDE packages to be installed

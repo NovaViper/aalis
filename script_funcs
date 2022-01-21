@@ -204,8 +204,8 @@ function makeFilesystems(){
 	fi
 
 	# These variables will be used later on in the installation process
-	final_boot_drive=$BOOT_DRIVE
-	final_root_drive=$ROOT_DRIVE
+	final_boot_drive=${BOOT_DRIVE}
+	final_root_drive=${ROOT_DRIVE}
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
