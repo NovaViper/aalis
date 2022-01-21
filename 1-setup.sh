@@ -12,8 +12,9 @@ term_editor=""
 use_term_editor_plugins=""
 use_lean_config=""
 use_dracula_theme=""
-microcode_type=""
+use_yadm=""
 use_minimal_install_mode=""
+microcode_type=""
 desktop_env=""
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
@@ -46,7 +47,7 @@ sed -i 's/^#Para/Para/' /etc/pacman.conf # Enable Parallel downloading for faste
 pacman -Syu
 
 banner ${LIGHT_PURPLE} "Setup Language to US and set locale, and hostname"
-sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+sed 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/1g' /etc/locale.gen
 locale-gen
 timedatectl set-ntp true
 timedatectl set-timezone America/Chicago
@@ -435,10 +436,11 @@ if [[ "$use_minimal_install_mode" != "yes" ]]; then
 
 	#Base user packages
 	output ${YELLOW} "====== Installing base user packages ====="
-	installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module"
+	installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module steam"
 
 	if [[ "yes" == $(askYesNo "Would you like to use the dotfiles manager, YADM?") ]]; then
 		output ${LIGHT_BLUE} "Installing YADM"
+		use_yadm="yes"
 		installPac "yadm"
 	fi
 else
@@ -492,7 +494,7 @@ while true; do
 	K | k) # KDE
 		output ${YELLOW} "Installing KDE and basic desktop apps"
 		desktop_env="kde"
-		installPac "xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools"
+		installPac "xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools partitionmanager system-config-printer cups-pk-helper"
 		systemctl enable sddm
 		output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
 		echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
@@ -541,7 +543,7 @@ fi
 
 
 output ${LIGHT_BLUE} "Saving Parameters for final step"
-if [[ "${users[@]}" ]]; then echo "users=$users"            >> ${SCRIPT_DIR}/sysconfig.conf; fi
+if [[ "${users[@]}" ]]; then echo "users=$users" >> ${SCRIPT_DIR}/sysconfig.conf; fi
 cat <<-EOF >> ${SCRIPT_DIR}/sysconfig.conf
 is_touchscreen=$is_touchscreen
 use_graphics=$use_graphics
@@ -553,8 +555,9 @@ term_editor=$term_editor
 use_term_editor_plugins=$use_term_editor_plugins
 use_lean_config=$use_lean_config
 use_dracula_theme=$use_dracula_theme
-microcode_type=$microcode_type
 use_minimal_install_mode=$use_minimal_install_mode
+use_yadm=$use_yadm
+microcode_type=$microcode_type
 desktop_env=$desktop_env
 EOF
 

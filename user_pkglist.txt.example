@@ -1,4 +1,5 @@
 # Specify packages with new lines, please check for spelling!
+keepassxc
 obs-studio
 papirus-icon-theme
 xournalpp-git
@@ -13,4 +14,8 @@ git-credential-keepassxc
 mu
 platformio
 plexamp-appimage
-latte-dock-git
+latte-dock
+yubikey-manager-qt
+yubikey-personalization-gui
+pam-u2f
+steam

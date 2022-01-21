@@ -4,6 +4,12 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 3.1.1
++ Added some more packages in user_pkglist.txt.example (for my own usage)
++ Added some more KDE specific packages that were originally missing into list of KDE packages to be installed
+* Fixed bug where comment instance of en_US,UTF-8 UTF-8 was being uncommented (hence broke the locale generation)
+^ Online version retrieval code now uses 'tr' instead of 'cut' whenever possible (MR !1)
+
 Version 3.1.0
 + Added ability to enable PulseAudio's echo/noise cancelling module
 + Added pulseaudio-bluetooth package to fix issues with PulseAudio and Bluetooth
