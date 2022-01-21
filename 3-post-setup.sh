@@ -86,10 +86,10 @@ while true; do
 		installPac "grub efibootmgr"
 		if [[ -d "/sys/firmware/efi" ]]; then
 			output ${YELLOW} "Installing GRUB for UEFI"
-			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${final_boot_drive}
+			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
 		else
 			output ${YELLOW} "Installing GRUB for BIOS"
-			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${final_boot_drive}
+			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
 		fi
 		output ${YELLOW} "Creating Boot Configurations"
 		root_uuid="$(findmnt -no UUID -T /)"

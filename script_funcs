@@ -184,7 +184,7 @@ function makeFilesystems(){
 			BOOT_DRIVE="${2}p1"
 			ROOT_DRIVE="${2}p2"
 		else
-			BOOT_DRIVE="${2}p"
+			BOOT_DRIVE="${2}p1"
 			ROOT_DRIVE="${2}p3"
 		fi
 	else
@@ -202,10 +202,6 @@ function makeFilesystems(){
 			ROOT_DRIVE="${2}3"
 		fi
 	fi
-
-	# These variables will be used later on in the installation process
-	final_boot_drive=$BOOT_DRIVE
-	final_root_drive=$ROOT_DRIVE
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then

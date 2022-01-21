@@ -5,9 +5,7 @@ use_crypt=""
 use_swap=""
 use_btrfs=""
 is_laptop=""
-diskUUID=""
-final_boot_disk=""
-final_root_drive=""
+disk_uuid=""
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
 RAM_MB=$(expr $RAM_KB / 1024)
 RAM_GB=$(expr $RAM_MB / 1024)
@@ -129,9 +127,7 @@ use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
 is_laptop=$is_laptop
-diskUUID=$diskUUID
-final_boot_drive=$final_boot_drive
-final_root_drive=$final_root_drive
+disk_uuid=$disk_uuid
 EOF
 cp -R ${SCRIPT_DIR} /mnt/root/aalis
 
