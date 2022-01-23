@@ -4,8 +4,21 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 3.2.0
++ Script now asks if you want to download DE specific AUR packages
++ Added GTK2 and GTK xdg configuration
++ Added yadm dotfile configuration importer, now asks if you want to import your dotfiles
++ Added BOOT_DIR variable for esp/boot partition location.. might be useful if I can figure out why LUKS+GRUB caused issues with /efi partition
+* Fixed issue where yadm was having corrupted PGP errors
+- Removed the ability to use the /efi partition, which fixed a critical issue where system wouldn't boot because of the /efi partition with LUKS.. unsure as to why it's not working, but until I can pin down the issue, the script will no longer use /efi but will instead use what it was using before, the /boot partition
+^ Script can now automatically enable the Dracula theme for KDE
+^ More error handling for root password creation and normal user creation
+^ Normal user accounts can now make usernames that contain 'root' in them (not still can't create an account called root)
+^ Changed some parameter names to make it easier to read them in the source code
+^ Moved ZSH and VIM premade configurations, and template of user_pkglist.txt over to premade-configs folder
+
 Version 3.1.2
-^ Fixed critical typo that resulted in cryptroot UUID not being properly passed to the end
+* Fixed critical typo that resulted in cryptroot UUID not being properly passed to the end
 
 Version 3.1.1
 + Added some more packages in user_pkglist.txt.example (for my own usage)

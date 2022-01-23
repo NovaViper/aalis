@@ -22,22 +22,22 @@ while true; do
 	read -p "$(output ${YELLOW} "What bootloader do you want to use? [G]rub, or [S]ystem-Boot?: ")" boot
 	case $boot in
 	S | s)
-		if [ -d /sys/firmware/efi ]; then
-			output ${LIGHT_RED} "Systemd-Boot only supports BIOS firmware! Please select something else!"
+		if [[ "$boot_mode" = "bios" ]]; then
+			output ${LIGHT_RED} "Systemd-Boot only supports UEFI firmware! Please select something else!"
 			continue
 		fi
 
 		banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
-		bootctl --path=/efi install
+		bootctl --path=/${BOOT_DIR} install
 		output ${YELLOW} "Creating Boot Configurations"
 		microcode_hook=""
 		if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
 		if [ "$microcode_type" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
-		sed -i '/timeout/s/^#//g' /efi/loader/loader.conf
-		sed -i '/default/s/^/#/g' /efi/loader/loader.conf
-		echo "default arch-*.conf" >> /efi/loader/loader.conf
-		touch /efi/loader/entries/arch-latest.conf
-		cat <<-EOF >> /efi/loader/entries/arch-latest.conf
+		sed -i '/timeout/s/^#//g' /${BOOT_DIR}/loader/loader.conf
+		sed -i '/default/s/^/#/g' /${BOOT_DIR}/loader/loader.conf
+		echo "default arch-*.conf" >> /${BOOT_DIR}/loader/loader.conf
+		touch /${BOOT_DIR}/loader/entries/arch-latest.conf
+		cat <<-EOF >> /${BOOT_DIR}/loader/entries/arch-latest.conf
 		title  ArchLinux
 		linux   /vmlinuz-linux
 		initrd  ${microcode_hook}
@@ -49,7 +49,7 @@ while true; do
 
 		if [ "$use_crypt" = "yes" ]; then
 			output ${YELLOW} "Configuring bootloader for disks encryption"
-			root_flags="cryptdevice=UUID=${disk_uuid}:cryptroot ${root_flags}"
+			root_flags="cryptdevice=UUID=${root_drive_uuid}:cryptroot ${root_flags}"
 		fi
 
 		if [ "$use_btrfs" = "yes" ]; then
@@ -79,18 +79,12 @@ while true; do
 		fi
 
 		output ${YELLOW} "Finishing creating configuration file for Systemd-Boot..."
-		echo "options rw ${root_flags} ${swap_flags}" >> /boot/loader/entries/arch-latest.conf
+		echo "options rw ${root_flags} ${swap_flags}" >> /${BOOT_DIR}/loader/entries/arch-latest.conf
 		break;;
 	G | g)
 		banner ${LIGHT_PURPLE} "Installing GRUB"
 		installPac "grub efibootmgr"
-		if [[ -d "/sys/firmware/efi" ]]; then
-			output ${YELLOW} "Installing GRUB for UEFI"
-			grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=GRUB ${BOOT_DRIVE}
-		else
-			output ${YELLOW} "Installing GRUB for BIOS"
-			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB ${BOOT_DRIVE}
-		fi
+		grub-install --target=x86_64-efi --efi-directory=/${BOOT_DIR} --bootloader-id=GRUB --recheck ${boot_drive_name}
 		output ${YELLOW} "Creating Boot Configurations"
 		root_uuid="$(findmnt -no UUID -T /)"
 		root_flags="root=UUID=${root_uuid}"
@@ -98,7 +92,7 @@ while true; do
 
 		if [ "$use_crypt" = "yes" ]; then
 			output ${YELLOW} "Configuring bootloader for disks encryption"
-			root_flags="cryptdevice=UUID=${disk_uuid}:cryptroot ${root_flags}"
+			root_flags="cryptdevice=UUID=${root_drive_uuid}:cryptroot ${root_flags}"
 		fi
 
 		if [ "$use_swap" = "yes" ]; then
@@ -123,7 +117,7 @@ while true; do
 
 		sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
 		output ${YELLOW} "Rebuilding GRUB..."
-		grub-mkconfig -o /boot/grub/grub.cfg
+		grub-mkconfig -o /${BOOT_DIR}/grub/grub.cfg
 		break;;
 	*) output ${LIGHT_RED} "Invalid input" ;;
 	esac

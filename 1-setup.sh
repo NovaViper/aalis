@@ -16,6 +16,7 @@ use_yadm=""
 use_minimal_install_mode=""
 microcode_type=""
 desktop_env=""
+use_desktop_env_aur=""
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
@@ -45,9 +46,10 @@ sed -i 's/^#Color/Color/' /etc/pacman.conf # Enable colored output
 if [[ "$use_minimal_install_mode" != "yes" ]]; then sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf; fi # Enable 32bit library fr Steam
 sed -i 's/^#Para/Para/' /etc/pacman.conf # Enable Parallel downloading for faster installation
 pacman -Syu
+pacman -S --noconfirm archlinux-keyring
 
 banner ${LIGHT_PURPLE} "Setup Language to US and set locale, and hostname"
-sed 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/1g' /etc/locale.gen
+sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/1g' /etc/locale.gen
 locale-gen
 timedatectl set-ntp true
 timedatectl set-timezone America/Chicago
@@ -93,6 +95,9 @@ export CARGO_HOME="$XDG_DATA_HOME/cargo"
 export LESSHISTFILE="$XDG_CONFIG_HOME/less/history"
 export LESSKEY="$XDG_CONFIG_HOME/less/keys"
 export NPM_CONFIG_USERCONFIG="$XDG_CONFIG_HOME/npm"
+export BASH_COMPLETION_USER_FILE="$XDG_CONFIG_HOME"/bash-completion/bash_completion
+export GTK_RC_FILES="$XDG_CONFIG_HOME"/gtk-1.0/gtkrc
+export GTK2_RC_FILES="$XDG_CONFIG_HOME"/gtk-2.0/gtkrc
 EOF
 
 if [[ "$use_dracula_theme" == "yes" ]]; then
@@ -117,7 +122,7 @@ while true; do
 		installPac "zsh"
 
 		# This forces ZSH to use XDG specification
-		cp ${SCRIPT_DIR}/zshenv /etc/zsh/zshenv
+		cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshenv /etc/zsh/zshenv
 
 		if [[ "yes" == $(askYesNo "Would you like to make the root user use ZSH?") ]]; then
 			output ${YELLOW} "Changing root shell"
@@ -134,11 +139,11 @@ while true; do
 
 				#Place zshrc files in skel folder so users can get them
 				mkdir -p /etc/skel/.config/zsh
-				cp ${SCRIPT_DIR}/zshrc /etc/skel/.config/zsh/.zshrc
+				cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc /etc/skel/.config/zsh/.zshrc
 
 				# Add custom ZSH config for root user if prompted
 				if [[ "$root_use_shell_type" == "yes" ]]; then
-					cp ${SCRIPT_DIR}/zshrc /etc/zsh/zshrc
+					cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc /etc/zsh/zshrc
 				fi
 			else
 				if [[ "yes" == $(askYesNo "Would you like to use a lean ZSH configuration with a few plugins? (autosuggestion,syntax highlighting,autocompletion,history search)") ]]; then
@@ -148,11 +153,11 @@ while true; do
 
 					#Place zshrc files in skel folder so users can get them
 					mkdir -p /etc/skel/.config/zsh
-					cp ${SCRIPT_DIR}/zshrc_min /etc/skel/.config/zsh/.zshrc
+					cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc_min /etc/skel/.config/zsh/.zshrc
 
 					# Add custom ZSH config for root user if prompted
 					if [[ "$root_use_shell_type" == "yes" ]]; then
-						cp ${SCRIPT_DIR}/zshrc_min /etc/zsh/zshrc
+						cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc_min /etc/zsh/zshrc
 					fi
 				else
 					output ${YELLOW} "Ok, skipping adding preconfigured zsh settings"
@@ -189,8 +194,6 @@ while true; do
 		term_editor="neovim"
 		installPac "neovim"
 
-		mkdir -p /etc/skel/.config/nvim
-
 		# Minimal selection for Neovim
 		if [[ "$use_minimal_install_mode" != "yes" ]]; then
 			if [[ "yes" == $(askYesNo "Would you like to use NovaViper's Neovim settings and plugins?") ]]; then
@@ -198,8 +201,9 @@ while true; do
 				use_term_editor_plugins="yes"
 
 				#Place neovim files in skel folder so users can get them
-				cp ${SCRIPT_DIR}/init.vim /etc/skel/.config/nvim/init.vim
-				cp ${SCRIPT_DIR}/plugins.vim /etc/skel/.config/nvim/plugins.vim
+				mkdir -p /etc/skel/.config/nvim
+				cp ${SCRIPT_DIR}/premade-configs/vim-configs/init.vim /etc/skel/.config/nvim/init.vim
+				cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins.vim /etc/skel/.config/nvim/plugins.vim
 			else
 				if [[ "yes" == $(askYesNo "Would you like to use a lean Neovim configuration with a few plugins? (vim-airline, vim-fugitive, vim-gitgutter)") ]]; then
 					output ${YELLOW} "Adding Minimal Neovim Settings"
@@ -208,8 +212,8 @@ while true; do
 
 					#Place neovim files in skel folder so users can get them
 					mkdir -p /etc/skel/.config/nvim
-					cp ${SCRIPT_DIR}/init_min.vim /etc/skel/.config/nvim/init.vim
-					cp ${SCRIPT_DIR}/plugins_min.vim /etc/skel/.config/nvim/plugins.vim
+					cp ${SCRIPT_DIR}/premade-configs/vim-configs/init_min.vim /etc/skel/.config/nvim/init.vim
+					cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins_min.vim /etc/skel/.config/nvim/plugins.vim
 				else
 					output ${YELLOW} "Ok, skipping adding preconfigured neovim settings"
 				fi
@@ -223,7 +227,7 @@ while true; do
 
 		output ${YELLOW} "Adding Vim XDG paths"
 		mkdir -p /etc/skel/.cache/vim/{undo,swap,backup} /etc/skel/.config/vim/after /etc/skel/.local/share/vim
-		cp ${SCRIPT_DIR}/vimrc /etc/skel/.config/vim/vimrc # Sends premade vimrc file with XDG configurations to skel folder for other users to use
+		cp ${SCRIPT_DIR}/premade-configs/vim-configs/vimrc /etc/skel/.config/vim/vimrc # Sends premade vimrc file with XDG configurations to skel folder for other users to use
 		cat <<-"EOF" >> /etc/profile
 		export GVIMINIT='let $MYGVIMRC="$XDG_CONFIG_HOME/vim/gvimrc" | source $MYGVIMRC'
 		export VIMINIT='let $MYVIMRC="$XDG_CONFIG_HOME/vim/vimrc" | source $MYVIMRC'
@@ -535,10 +539,15 @@ while true; do
 	esac
 done
 
+
+if [[ "yes" == $(askYesNo "Do you want to install extra AUR packages for $desktop_env?") ]]; then
+	use_desktop_env_aur="yes"
+fi
+
 # Install user specified aur packages, filters out AUR packages from ArchLinux repo packages
-if [ -f ${SCRIPT_DIR}/user_pkglist.txt ]; then
+if [ -f ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt ]; then
 	banner ${LIGHT_PURPLE} "Installing Additional User packages"
-	installPac "$(comm -12 <(pacman -Slq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
+	installPac "$(comm -12 <(pacman -Slq | sort) <(sort ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt))"
 fi
 
 
@@ -559,6 +568,7 @@ use_minimal_install_mode=$use_minimal_install_mode
 use_yadm=$use_yadm
 microcode_type=$microcode_type
 desktop_env=$desktop_env
+use_desktop_env_aur=$use_desktop_env_aur
 EOF
 
 if [ $(whoami) = "root"  ];
