@@ -21,12 +21,13 @@ Pronounced as "Alice". This script helps me personally install ArchLinux along w
 - Detect and load in all UUIDs necessary for storage configuration
 - Colorful output!!
 - Sets up ssh-agent as a systemd service in order for ssh-agent to start up by default.
-- (NEW IN v3) Can now install user specified packages via user_pkglist.txt! (See my own list, user_pkglist.txt.example)
+- (NEW IN v3) Can now install user specified packages via `user_pkglist.txt`! See my own list, [user_pkglist.txt.example](premade-configs/packages/user_pkglist.txt.example)
+- Dracula theme can now be enabled under KDE
 
 ## What it doesn't do
 - Automatically add kernel parameters for LUKS, BTRFS, and SWAP for mkinicpio, it just echoes the names of the parameters into the mkinitcpio file
 - Configure keyboard layout, languages, and timezones other than those specified in the script itself (US English, QWERTY layout for 104 keys). The script must be modified in order to account for those.
-- Make DE use custom theme that don't look at the environment variables. The theme I use, [Dracula](https://draculatheme.com/) is installed; but I haven't figured out away to automatically tell the DE to use the theme.
+- Make DE use custom theme that don't look at the environment variables. The theme I use, [Dracula](https://draculatheme.com/) is installed; but I haven't figured out away to automatically tell the DE to use the theme. (Now possible in KDE but not in the others)
 
 ## How to run this script
 - Type the following commands in the prompt:
@@ -38,10 +39,9 @@ cd aalis
 ```
 
 ## How to Specify User Packages to Install
-- Before starting the script, create a file called user_pkglist.txt
+- Before starting the script, create a file called user_pkglist.txt under premade-configs/packages (or see the example, [user_pkglist.txt.example](premade-configs/packages/user_pkglist.txt.example))
 - Add package names to the file, each package on a new line
 - Save the file within the script directory, then run the main script!
-
 
 ## Changelog
 See [CHANGELOG](CHANGELOG) to see how the script has changed over time

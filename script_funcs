@@ -203,11 +203,14 @@ function makeFilesystems(){
 		fi
 	fi
 
+	#save drive name
+	export boot_drive_name="${BOOT_DRIVE}"
+
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
 		cryptsetup -y -v luksFormat ${ROOT_DRIVE}
 		cryptsetup open ${ROOT_DRIVE} cryptroot
-		disk_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE})
+		export root_drive_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE})
 		ROOT_DRIVE="/dev/mapper/cryptroot"
 	fi
 
@@ -224,15 +227,8 @@ function makeFilesystems(){
 				output ${YELLOW} "Mounting everything"
 				mount ${ROOT_DRIVE} /mnt
 
-				if [ -d /sys/firmware/efi ]; then
-					output ${YELLOW} "Configuring boot partition for UEFI"
-					mkdir -p /mnt/efi
-					mount ${BOOT_DRIVE} /mnt/efi
-				else
-					output ${YELLOW} "Configuring boot partition for BIOS"
-					mkdir -p /mnt/boot
-					mount ${BOOT_DRIVE} /mnt/boot
-				fi
+				mkdir -p /mnt/${BOOT_DIR}
+				mount ${BOOT_DRIVE} /mnt/${BOOT_DIR}
 
 				if [[ "$use_swap" = "yes"  ]]; then
 					output ${YELLOW} "Lets make the swapfile!"
@@ -265,21 +261,12 @@ function makeFilesystems(){
 					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
 				fi
 
-
-				if [ -d /sys/firmware/efi ]; then
-					output ${YELLOW} "Configuring boot partition for UEFI"
-					mkdir -p /mnt/efi
-					mount ${BOOT_DRIVE} /mnt/efi
-				else
-					output ${YELLOW} "Configuring boot partition for BIOS"
-					mkdir -p /mnt/boot
-					mount ${BOOT_DRIVE} /mnt/boot
-				fi
-
-				# Mount Every other partition
-				mkdir -p /mnt/{home,var}
+				#Make paths for mounts
+				mkdir -p /mnt/{${BOOT_DIR},home,var}
 				mkdir -p /mnt/var/{cache,log}
 
+				#Mount Every other partition
+				mount ${BOOT_DRIVE} /mnt/${BOOT_DIR}
 				if [[ "$no_defrag" == "yes" ]]; then
 					mount -o defaults,noatime,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
 					mount -o defaults,noatime,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
@@ -308,42 +295,52 @@ function makeFilesystems(){
 	done
 }
 
-addRootPass(){
+createPassword(){
 	while true; do
-		read -s -p "$(output ${YELLOW} "Create a new password for Root user: ")" password
+		read -s -p "$(output ${YELLOW} "Create a new password for $1: ")" password
 		echo
 		read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
 		echo
-		if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo ${LIGHT_RED} "THIS IS AN EXTREME SECURITY RISK AS ANYONE CAN AND WILL MODIFY YOUR SYSTEM AT ANY TIME!!!!!!! Do you accept the consequences??")  ]]; then
-			if [[ "yes" == $(askYesNo ${LIGHT_RED} "Are you REALLY sure? IT IS HIGHLY RECOMMENDED NOT TO DO THIS FOR THE ROOT USER!!!!!") ]]; then break; fi
+		if [[ -z "$password" ]]; then
+			if [[ "yes" == $(askYesNo ${LIGHT_RED} "$2")  ]]; then
+				if [[ "yes" == $(askYesNo ${LIGHT_RED} "$3") ]]; then
+					break 2
+				else
+					continue
+				fi
+			else
+				continue
+			fi
 		fi
 		[ "$password" = "$password2" ] && break
 		output ${LIGHT_RED} "Please try again"
 	done
+}
 
+addRootPass(){
+	createPassword "the root user" "THIS IS AN EXTREME SECURITY RISK AS ANYONE CAN AND WILL MODIFY YOUR SYSTEM AT ANY TIME! Do you accept the consequences?" "Are you REALLY sure? IT IS HIGHLY RECOMMENDED NOT TO DO THIS FOR THE ROOT USER!"
 	output ${YELLOW} "Adding password for root user..."
+	#echo "DEBUG: $password"
 	echo "root:$password" | chpasswd
 }
 
 addUserPass(){
 	while true; do
 		read -p "$(output ${YELLOW} "Please enter a name for the new user: ")" username
-		if [[ ! "${users[*]}" =~ "${username}" ]]; then
-			read -s -p "$(output ${YELLOW} "Create a new password for $username: ")" password
-			echo
-			read -s -p "$(output ${YELLOW} "Enter the password (again): ")" password2
-			echo
-			if [[ "$password" = "" ]] && [[ "yes" == $(askYesNo ${LIGHT_RED} "!!!!!This is a security risk and allows anyone to get into your machine!!!!!! Do you accept the consequences?")  ]]; then
-				if [[ "yes" == $(askYesNo ${LIGHT_RED} "Are you REALLY sure?") ]]; then break; fi
-			fi
-			[ "$password" = "$password2" ] && break
-			output ${LIGHT_RED} "Please try again"
-		elif [[ "${username}" =~ "root" ]]; then
+		if [[ ! "${users[*]}" == "$username" ]] && [[ ! -z "${username}" ]] && [[ ! "${username}" == "root" ]]; then
+			break
+		elif [[ "$username" == "root" ]]; then
 			output ${LIGHT_RED} "You cannot create a user with the name root, as it is reserved for the admin account. Please try a different username."
-		else
-			output ${LIGHT_RED} "You already entered this username, please enter a new username"
+			continue
+		elif [[ "${users[*]}" == "$username" ]] && [[ ! -z "${username}" ]]; then
+			output ${LIGHT_RED} "You already entered this username, please enter a new username!"
+			continue
+		elif [[ -z "${username}" ]]; then
+			output ${LIGHT_RED} "The username cannot be blank. Please try again."
+			continue
 		fi
 	done
+	createPassword "$username" "This is a security risk and allows anyone to get into your machine! Do you accept the consequences?" "Are you REALLY sure?"
 
 	output ${YELLOW} "Creating $username..."
 	useradd -m -G wheel $username

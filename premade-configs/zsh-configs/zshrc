@@ -45,6 +45,10 @@ HISTFILE=~/.config/zsh/.zsh_history
 HISTSIZE=1000
 SAVEHIST=1000
 
+# Alias
+alias doom=${XDG_CONFIG_HOME:-$HOME/.config}/emacs/bin/doom
+alias org-tangle='${XDG_CONFIG_HOME:-$HOME/.config}/emacs/bin/org-tangle ${XDG_CONFIG_HOME:-$HOME/.config}/doom/config.org'
+
 #Enable AutoCD into dir, terminal bell, and terminal notify
 setopt autocd beep notify
 

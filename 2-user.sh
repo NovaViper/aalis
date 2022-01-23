@@ -45,7 +45,6 @@ if [[ "$shell_type" == "zsh" && "$use_shell_type_plugins" == "yes" ]]; then
 	fi
 fi
 
-
 if [[ "$term_editor" == "neovim" && "$use_term_editor_plugins" == "yes" ]]; then
 	output ${YELLOW} "Installing Neovim Plugin Manager"
 	installYay "neovim-plug-git"
@@ -76,55 +75,83 @@ if [[ "$use_swap" == "yes"  ]]; then
 	sudo systemctl enable zramd.service
 fi
 
-#DE Specific Install
-if [[ "$desktop_env" == "xfce"  ]]; then
-	output ${YELLOW} "Installing XFCE specific AUR packages"
-	installYay "gnome-ssh-askpass3 menulibre mugshot"
-	if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
-		installYay "xfce4-docklike-plugin-ng-git xfce4-windowck-plugin"
+if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your dotfiles with yadm now?") ]]; then
+	banner ${LIGHT_PURPLE} "Importing Yadm wizard"
+	while true; do
+		echo "Enter the URL for your Yadm repository. (Ex: https://github.com/exampledotfile))"
+		read REPO
+		if [[ ! -z "$REPO" ]];then
+			output ${YELLOW} "Importing your yadm configuration..."
+			yadm clone ${REPO}
+			break
+		else
+			output ${LIGHT_RED} "This cannot be blank! Please try again!"
+		fi
+	done
+	if [[ "yes" == $(askYesNo "Would you like to decrypt your encrypted yadm configurations? (You can choose to do this later!)") ]]; then
+	   yadm decrypt
 	fi
-	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing extra libinput packages"
-		installYay "libinput-gestures"
-	fi
+fi
 
-elif [[ "$desktop_env" == "gnome"  ]]; then
-	output ${YELLOW} "Installing Gnome specific AUR packages"
-	installYay "gnome-ssh-askpass3 menulibre mugshot"
-	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing extra libinput packages"
-		installYay "libinput-gestures"
-	fi
+if [[ "$use_desktop_env_aur" == "yes" ]]; then
+	#DE Specific Install
+	banner ${LIGHT_PURPLE} "Installing DE Specific AUR packages"
+	if [[ "$desktop_env" == "xfce"  ]]; then
+		output ${YELLOW} "Installing XFCE specific AUR packages"
+		installYay "gnome-ssh-askpass3 menulibre mugshot"
+		if [[ "yes" == $(askYesNo "Would you like to install Windowck (displays window title and buttons) and XFCE4 Docklike (Win 10-like taskbar) applets?") ]]; then
+			installYay "xfce4-docklike-plugin-ng-git xfce4-windowck-plugin"
+		fi
+		if [[ "$is_laptop" == "yes" ]]; then
+			output ${YELLOW} "Installing extra libinput packages"
+			installYay "libinput-gestures"
+		fi
 
-elif [[ "$desktop_env" == "kde"  ]]; then
-	output ${YELLOW} "Installing KDE specific packages"
-	installYay "kde-servicemenus-pdf rootactions-servicemenu"
-	if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
-		installYay "plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git"
-	fi
-	if [[ "$use_dracula_theme" == "yes" ]]; then
-		output ${YELLOW} "Installing KDE specific Dracula theme package"
-		installYay "ant-dracula-kde-theme-git"
-	fi
-	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing extra libinput packages"
-		installYay "libinput-gestures"
-	fi
+	elif [[ "$desktop_env" == "gnome"  ]]; then
+		output ${YELLOW} "Installing Gnome specific AUR packages"
+		installYay "gnome-ssh-askpass3 menulibre mugshot"
+		if [[ "$is_laptop" == "yes" ]]; then
+			output ${YELLOW} "Installing extra libinput packages"
+			installYay "libinput-gestures"
+		fi
 
-elif [[ "$desktop_env" == "cinnamon"  ]]; then
-	output ${YELLOW} "Installing Cinnamon specific packages"
-	installYay "gnome-ssh-askpass3 menulibre mugshot"
-	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing extra libinput packages"
-		installYay "libinput-gestures"
-	fi
+	elif [[ "$desktop_env" == "kde"  ]]; then
+		output ${YELLOW} "Installing KDE specific packages"
+		installYay "kde-servicemenus-pdf rootactions-servicemenu"
+		if [[ "yes" == $(askYesNo "Would you like to install Appmenu, Window button, and Window title applets?") ]]; then
+			installYay "plasma5-applets-window-appmenu-git plasma5-applets-window-buttons-git plasma5-applets-window-title-git"
+		fi
+		if [[ "$use_dracula_theme" == "yes" ]]; then
+			output ${YELLOW} "Installing KDE specific Dracula theme package"
+			installYay "ant-dracula-kde-theme-git"
 
+			output ${YELLOW} "Adding Dracula SDDM theme for KDE"
+			sudo touch /etc/sddm.conf
+			sudo bash -c 'cat <<-EOF > /etc/sddm.conf
+			[Theme]
+			Current=Dracula
+			EOF'
+		fi
+		if [[ "$is_laptop" == "yes" ]]; then
+			output ${YELLOW} "Installing extra libinput packages"
+			installYay "libinput-gestures"
+		fi
+
+	elif [[ "$desktop_env" == "cinnamon"  ]]; then
+		output ${YELLOW} "Installing Cinnamon specific packages"
+		installYay "gnome-ssh-askpass3 menulibre mugshot"
+		if [[ "$is_laptop" == "yes" ]]; then
+			output ${YELLOW} "Installing extra libinput packages"
+			installYay "libinput-gestures"
+		fi
+
+	fi
 fi
 
 # Install user specified aur packages, filters out pacman packages from AUR packages
-if [ -f ${SCRIPT_DIR}/user_pkglist.txt ]; then
+if [ -f ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt ]; then
 	banner ${LIGHT_PURPLE} "Installing Additional User Packages"
-	installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/user_pkglist.txt))"
+	installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt))"
 fi
 
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"

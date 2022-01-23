@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
 # Variable declarations
+BOOT_DIR=""
 use_crypt=""
 use_swap=""
 use_btrfs=""
 is_laptop=""
-disk_uuid=""
+boot_mode=""
+root_drive_uuid=""
+boot_drive_name=""
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
 RAM_MB=$(expr $RAM_KB / 1024)
 RAM_GB=$(expr $RAM_MB / 1024)
@@ -75,11 +78,15 @@ sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 
 # Create partitions
 if [ -d /sys/firmware/efi ]; then
+	boot_mode="uefi"
+	BOOT_DIR="boot"
 	output ${YELLOW} "Creating UEFI boot partition"
-	sgdisk -n 1::+250M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
+	sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
 	sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
 	makeFilesystems "uefi" ${DISK}
 else
+	boot_mode="bios"
+	BOOT_DIR="boot"
 	output ${YELLOW} "Creating BIOS boot partition"
 	sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
 	sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
@@ -123,13 +130,15 @@ fi
 output ${LIGHT_BLUE} "Saving Parameters for next step"
 touch ${SCRIPT_DIR}/sysconfig.conf
 cat <<-EOF >> ${SCRIPT_DIR}/sysconfig.conf
+BOOT_DIR=$BOOT_DIR
 use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
 is_laptop=$is_laptop
-disk_uuid=$disk_uuid
+boot_mode=$boot_mode
+root_drive_uuid=$root_drive_uuid
+boot_drive_name=$boot_drive_name
 EOF
-cp -R ${SCRIPT_DIR} /mnt/root/aalis
 
 banner ${LIGHT_GREEN} "SYSTEM READY FOR 1-setup"
 sleep 3
