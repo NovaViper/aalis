@@ -181,11 +181,11 @@ function makeFilesystems(){
 		output ${YELLOW} "Disabling autodefrag for btrfs"
 		no_defrag="yes" # don't use autodefrag for btrfs parttions
 		if [[ "${1}" = "uefi" ]]; then
-			BOOT_DRIVE="${2}p1"
-			ROOT_DRIVE="${2}p2"
+			BOOT_DRIVE_PARTITION="${2}p1"
+			ROOT_DRIVE_PARTITION="${2}p2"
 		else
-			BOOT_DRIVE="${2}p1"
-			ROOT_DRIVE="${2}p3"
+			BOOT_DRIVE_PARTITION="${2}p1"
+			ROOT_DRIVE_PARTITION="${2}p3"
 		fi
 	else
 		DISK_NAME=$(sed 's|/dev/||g' <(echo ${2}))
@@ -195,40 +195,40 @@ function makeFilesystems(){
 		fi
 
 		if [[ "${1}" = "uefi" ]]; then
-			BOOT_DRIVE="${2}1"
-			ROOT_DRIVE="${2}2"
+			BOOT_DRIVE_PARTITION="${2}1"
+			ROOT_DRIVE_PARTITION="${2}2"
 		else
-			BOOT_DRIVE="${2}2"
-			ROOT_DRIVE="${2}3"
+			BOOT_DRIVE_PARTITION="${2}2"
+			ROOT_DRIVE_PARTITION="${2}3"
 		fi
 	fi
 
 	#save drive name
-	export boot_drive_name="${BOOT_DRIVE}"
+	export boot_drive_name="${2}"
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
-		cryptsetup -y -v luksFormat ${ROOT_DRIVE}
-		cryptsetup open ${ROOT_DRIVE} cryptroot
-		export root_drive_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE})
-		ROOT_DRIVE="/dev/mapper/cryptroot"
+		cryptsetup -y -v luksFormat ${ROOT_DRIVE_PARTITION}
+		cryptsetup open ${ROOT_DRIVE_PARTITION} cryptroot
+		export root_drive_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE_PARTITION})
+		ROOT_DRIVE_PARTITION="/dev/mapper/cryptroot"
 	fi
 
 	# Create the filesystems
 	output ${YELLOW} "Creating Filesystems..."
-	mkfs.fat -F32 ${BOOT_DRIVE} # Create boot filesystem
+	mkfs.fat -F32 ${BOOT_DRIVE_PARTITION} # Create boot filesystem
 	while true; do
 		read -p "$(output ${YELLOW} "What filesystem do you want to use? Ext4, BTRFS: ")"
 		case $(echo $REPLY | tr '[A-Z]' '[a-z]') in
 			EXT4 | ext4)
 				banner ${LIGHT_PURPLE} "Setting up EXT4 filesystems"
-				mkfs.ext4 ${ROOT_DRIVE}
+				mkfs.ext4 ${ROOT_DRIVE_PARTITION}
 
 				output ${YELLOW} "Mounting everything"
-				mount ${ROOT_DRIVE} /mnt
+				mount ${ROOT_DRIVE_PARTITION} /mnt
 
 				mkdir -p /mnt/${BOOT_DIR}
-				mount ${BOOT_DRIVE} /mnt/${BOOT_DIR}
+				mount ${BOOT_DRIVE_PARTITION} /mnt/${BOOT_DIR}
 
 				if [[ "$use_swap" = "yes"  ]]; then
 					output ${YELLOW} "Lets make the swapfile!"
@@ -243,8 +243,8 @@ function makeFilesystems(){
 			BTRFS | btrfs)
 				banner ${LIGHT_PURPLE} "Setting up BTRFS filesystems"
 				use_btrfs="yes"
-				mkfs.btrfs ${ROOT_DRIVE} -f
-				mount ${ROOT_DRIVE} /mnt
+				mkfs.btrfs ${ROOT_DRIVE_PARTITION} -f
+				mount ${ROOT_DRIVE_PARTITION} /mnt
 				btrfs subvolume create /mnt/@
 				btrfs subvolume create /mnt/@home
 				btrfs subvolume create /mnt/@cache
@@ -256,9 +256,9 @@ function makeFilesystems(){
 
 				output ${YELLOW} "Mounting everything"
 				if [[ "$no_defrag" == "yes" ]]; then
-					mount -o defaults,noatime,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+					mount -o defaults,noatime,compress=zstd,subvol=@ ${ROOT_DRIVE_PARTITION} /mnt
 				else
-					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE} /mnt
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@ ${ROOT_DRIVE_PARTITION} /mnt
 				fi
 
 				#Make paths for mounts
@@ -266,21 +266,21 @@ function makeFilesystems(){
 				mkdir -p /mnt/var/{cache,log}
 
 				#Mount Every other partition
-				mount ${BOOT_DRIVE} /mnt/${BOOT_DIR}
+				mount ${BOOT_DRIVE_PARTITION} /mnt/${BOOT_DIR}
 				if [[ "$no_defrag" == "yes" ]]; then
-					mount -o defaults,noatime,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
-					mount -o defaults,noatime,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
-					mount -o defaults,noatime,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+					mount -o defaults,noatime,compress=zstd,subvol=@home ${ROOT_DRIVE_PARTITION} /mnt/home
+					mount -o defaults,noatime,compress=zstd,subvol=@cache ${ROOT_DRIVE_PARTITION} /mnt/var/cache
+					mount -o defaults,noatime,compress=zstd,subvol=@log ${ROOT_DRIVE_PARTITION} /mnt/var/log
 				else
-					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE} /mnt/home
-					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE} /mnt/var/cache
-					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE} /mnt/var/log
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@home ${ROOT_DRIVE_PARTITION} /mnt/home
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@cache ${ROOT_DRIVE_PARTITION} /mnt/var/cache
+					mount -o defaults,noatime,autodefrag,compress=zstd,subvol=@log ${ROOT_DRIVE_PARTITION} /mnt/var/log
 				fi
 
 				if [[ "$use_swap" = "yes"  ]]; then
 					output ${YELLOW} "Lets make the swapfile!"
 					mkdir -p /mnt/swap
-					mount -o defaults,noatime,subvol=@swap ${ROOT_DRIVE} /mnt/swap
+					mount -o defaults,noatime,subvol=@swap ${ROOT_DRIVE_PARTITION} /mnt/swap
 					truncate -s 0 /mnt/swap/swapfile
 					chattr +C /mnt/swap/swapfile
 					btrfs property set /mnt/swap/swapfile compression none

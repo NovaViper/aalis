@@ -28,7 +28,7 @@ while true; do
 		fi
 
 		banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
-		bootctl --path=/${BOOT_DIR} install
+		bootctl --esp-path=/${BOOT_DIR} --boot-path=/boot install
 		output ${YELLOW} "Creating Boot Configurations"
 		microcode_hook=""
 		if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
@@ -84,7 +84,13 @@ while true; do
 	G | g)
 		banner ${LIGHT_PURPLE} "Installing GRUB"
 		installPac "grub efibootmgr"
-		grub-install --target=x86_64-efi --efi-directory=/${BOOT_DIR} --bootloader-id=GRUB --recheck ${boot_drive_name}
+
+		if [[ "$boot_mode" = "uefi" ]]; then
+			grub-install --target=x86_64-efi --efi-directory=/${BOOT_DIR} --bootloader-id=GRUB --recheck ${boot_drive_name}
+		else
+			grub-install --target=i386-pc --bootloader-id=GRUB --recheck ${boot_drive_name}
+		fi
+
 		output ${YELLOW} "Creating Boot Configurations"
 		root_uuid="$(findmnt -no UUID -T /)"
 		root_flags="root=UUID=${root_uuid}"
@@ -117,7 +123,7 @@ while true; do
 
 		sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT="/&'"${root_flags} ${swap_flags}"' /' /etc/default/grub
 		output ${YELLOW} "Rebuilding GRUB..."
-		grub-mkconfig -o /${BOOT_DIR}/grub/grub.cfg
+		grub-mkconfig -o /boot/grub/grub.cfg
 		break;;
 	*) output ${LIGHT_RED} "Invalid input" ;;
 	esac
