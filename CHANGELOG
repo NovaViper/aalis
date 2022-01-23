@@ -22,6 +22,8 @@ Version 3.2.0
 ^ Changed some parameter names to make it easier to read them in the source code
 ^ Moved ZSH and VIM premade configurations, and template of user_pkglist.txt over to premade-configs folder
 
+***** THE VERSIONS WITHIN THE # LINES ARE BROKEN, PLEASE UPDATE TO THE NEXT AVAILABLE VERSION, SEE ISSUE #2
+#######################################################################################################################################
 Version 3.1.2
 * Fixed critical typo that resulted in cryptroot UUID not being properly passed to the end
 
@@ -52,6 +54,7 @@ Version 3.1.0
 ^ The script will accordingly install the ESP partition depending on firmware type (BIOS will still use /boot while UEFI will use /efi)
 ^ Made core install variables more readable, skipped to v3.1.0 due to such a crucial change
 ^ Script now checks if sysconfig.conf file is present after first two stages (pre-install and setup)
+#######################################################################################################################################
 
 Version 3.0.0
 + Added ability for users to specify their own packages to install during installation (supports pacman and AUR packages, and will automatically discover what packages is under the arch repos and which ones are not)
