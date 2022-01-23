@@ -90,6 +90,9 @@ if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your 
 	done
 	if [[ "yes" == $(askYesNo "Would you like to decrypt your encrypted yadm configurations? (You can choose to do this later!)") ]]; then
 	   yadm decrypt
+	else
+		output ${LIGHT_BLUE} "Ok, I won't decrypt them, but you can always run 'yadm decrypt' to decrypt them later on!"
+		sleep 3
 	fi
 fi
 

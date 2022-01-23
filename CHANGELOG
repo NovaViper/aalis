@@ -4,6 +4,11 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 3.2.1
+- No longer allow zshrc to be placed in /etc/zsh, would will allow for custom zshrc files for each user (including root)
+^ Will skip premade settings prompts if you want to import the ones from your dotfiles repo
+^ Finally replaced ZPLUG_HOME with ZINIT_HOME
+
 Version 3.2.0
 + Script now asks if you want to download DE specific AUR packages
 + Added GTK2 and GTK xdg configuration

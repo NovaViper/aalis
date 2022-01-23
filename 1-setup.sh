@@ -8,8 +8,10 @@ use_bluetooth=""
 shell_type=""
 root_use_shell_type=""
 use_shell_type_plugins=""
+use_own_shell_type_config=""
 term_editor=""
 use_term_editor_plugins=""
+use_own_term_editor_config=""
 use_lean_config=""
 use_dracula_theme=""
 use_yadm=""
@@ -108,6 +110,13 @@ if [[ "$use_dracula_theme" == "yes" ]]; then
 	EOF
 fi
 
+
+if [[ "yes" == $(askYesNo "Would you like to use the dotfiles manager, YADM?") ]]; then
+	output ${LIGHT_BLUE} "Installing YADM"
+	use_yadm="yes"
+	installPac "yadm"
+fi
+
 # Shell Type configuration selection, asks user what shell they want ot use
 while true; do
 	read -p "$(output ${YELLOW} "What shell do you want to use? [B]ash, [Z]sh, [F]ish?: ")" shell
@@ -130,37 +139,35 @@ while true; do
 			chsh -s /bin/zsh
 		fi
 
-		#Minimal Selection for ZSH, asks user if they want to use predefined configurations or just start off blank
+		#Minimal Selection for ZSH, asks user if they want to use predefined configurations or just start off blank (or even their own configurations from yadm)
+		if [[ "$use_yadm" == "yes" ]]; then
+			if [[ "yes" == $(askYesNo "Would you like to import your own ZSH settings?") ]]; then
+				use_own_shell_type_config="yes"
+			fi
+		fi
+
 		if [[ "$use_minimal_install_mode" != "yes" ]]; then
-			if [[ "yes" == $(askYesNo "Would you like to use NovaViper's ZSH settings and plugins?") ]]; then
-				output ${YELLOW} "Adding NovaViper's ZSH Settings"
-				installPac "fzf subversion"
-				use_shell_type_plugins="yes"
-
-				#Place zshrc files in skel folder so users can get them
-				mkdir -p /etc/skel/.config/zsh
-				cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc /etc/skel/.config/zsh/.zshrc
-
-				# Add custom ZSH config for root user if prompted
-				if [[ "$root_use_shell_type" == "yes" ]]; then
-					cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc /etc/zsh/zshrc
-				fi
-			else
-				if [[ "yes" == $(askYesNo "Would you like to use a lean ZSH configuration with a few plugins? (autosuggestion,syntax highlighting,autocompletion,history search)") ]]; then
-					output ${YELLOW} "Adding Minimal ZSH Settings"
+			if [[ "$use_own_shell_type_config" != "yes" ]]; then
+				if [[ "yes" == $(askYesNo "Would you like to use NovaViper's ZSH settings and plugins?") ]]; then
+					output ${YELLOW} "Adding NovaViper's ZSH Settings"
+					installPac "fzf subversion"
 					use_shell_type_plugins="yes"
-					use_lean_config="yes"
 
 					#Place zshrc files in skel folder so users can get them
 					mkdir -p /etc/skel/.config/zsh
-					cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc_min /etc/skel/.config/zsh/.zshrc
-
-					# Add custom ZSH config for root user if prompted
-					if [[ "$root_use_shell_type" == "yes" ]]; then
-						cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc_min /etc/zsh/zshrc
-					fi
+					cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc /etc/skel/.config/zsh/.zshrc
 				else
-					output ${YELLOW} "Ok, skipping adding preconfigured zsh settings"
+					if [[ "yes" == $(askYesNo "Would you like to use a lean ZSH configuration with a few plugins? (autosuggestion,syntax highlighting,autocompletion,history search)") ]]; then
+						output ${YELLOW} "Adding Minimal ZSH Settings"
+						use_shell_type_plugins="yes"
+						use_lean_config="yes"
+
+						#Place zshrc files in skel folder so users can get them
+						mkdir -p /etc/skel/.config/zsh
+						cp ${SCRIPT_DIR}/premade-configs/zsh-configs/zshrc_min /etc/skel/.config/zsh/.zshrc
+					else
+						output ${YELLOW} "Ok, skipping adding preconfigured zsh settings"
+					fi
 				fi
 			fi
 		fi
@@ -194,28 +201,36 @@ while true; do
 		term_editor="neovim"
 		installPac "neovim"
 
+		if [[ "$use_yadm" == "yes" ]]; then
+			if [[ "yes" == $(askYesNo "Would you like to import your own Neovim settings?") ]]; then
+				use_own_term_editor_config="yes"
+			fi
+		fi
+
 		# Minimal selection for Neovim
 		if [[ "$use_minimal_install_mode" != "yes" ]]; then
-			if [[ "yes" == $(askYesNo "Would you like to use NovaViper's Neovim settings and plugins?") ]]; then
-				output ${YELLOW} "Adding NovaViper's Neovim Settings"
-				use_term_editor_plugins="yes"
-
-				#Place neovim files in skel folder so users can get them
-				mkdir -p /etc/skel/.config/nvim
-				cp ${SCRIPT_DIR}/premade-configs/vim-configs/init.vim /etc/skel/.config/nvim/init.vim
-				cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins.vim /etc/skel/.config/nvim/plugins.vim
-			else
-				if [[ "yes" == $(askYesNo "Would you like to use a lean Neovim configuration with a few plugins? (vim-airline, vim-fugitive, vim-gitgutter)") ]]; then
-					output ${YELLOW} "Adding Minimal Neovim Settings"
+			if [[ "$use_own_term_editor_config" != "yes" ]]; then
+				if [[ "yes" == $(askYesNo "Would you like to use NovaViper's Neovim settings and plugins?") ]]; then
+					output ${YELLOW} "Adding NovaViper's Neovim Settings"
 					use_term_editor_plugins="yes"
-					use_lean_config="yes"
 
 					#Place neovim files in skel folder so users can get them
 					mkdir -p /etc/skel/.config/nvim
-					cp ${SCRIPT_DIR}/premade-configs/vim-configs/init_min.vim /etc/skel/.config/nvim/init.vim
-					cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins_min.vim /etc/skel/.config/nvim/plugins.vim
+					cp ${SCRIPT_DIR}/premade-configs/vim-configs/init.vim /etc/skel/.config/nvim/init.vim
+					cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins.vim /etc/skel/.config/nvim/plugins.vim
 				else
-					output ${YELLOW} "Ok, skipping adding preconfigured neovim settings"
+					if [[ "yes" == $(askYesNo "Would you like to use a lean Neovim configuration with a few plugins? (vim-airline, vim-fugitive, vim-gitgutter)") ]]; then
+						output ${YELLOW} "Adding Minimal Neovim Settings"
+						use_term_editor_plugins="yes"
+						use_lean_config="yes"
+
+						#Place neovim files in skel folder so users can get them
+						mkdir -p /etc/skel/.config/nvim
+						cp ${SCRIPT_DIR}/premade-configs/vim-configs/init_min.vim /etc/skel/.config/nvim/init.vim
+						cp ${SCRIPT_DIR}/premade-configs/vim-configs/plugins_min.vim /etc/skel/.config/nvim/plugins.vim
+					else
+						output ${YELLOW} "Ok, skipping adding preconfigured neovim settings"
+					fi
 				fi
 			fi
 		fi
@@ -441,12 +456,6 @@ if [[ "$use_minimal_install_mode" != "yes" ]]; then
 	#Base user packages
 	output ${YELLOW} "====== Installing base user packages ====="
 	installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module steam"
-
-	if [[ "yes" == $(askYesNo "Would you like to use the dotfiles manager, YADM?") ]]; then
-		output ${LIGHT_BLUE} "Installing YADM"
-		use_yadm="yes"
-		installPac "yadm"
-	fi
 else
 	#Base user packages
 	output ${YELLOW} "====== Installing base user packages ====="
@@ -560,8 +569,10 @@ use_bluetooth=$use_bluetooth
 shell_type=$shell_type
 root_use_shell_type=$root_use_shell_type
 use_shell_type_plugins=$use_shell_type_plugins
+use_own_shell_type_config=$use_own_shell_type_config
 term_editor=$term_editor
 use_term_editor_plugins=$use_term_editor_plugins
+use_own_term_editor_config=$use_own_term_editor_config
 use_lean_config=$use_lean_config
 use_dracula_theme=$use_dracula_theme
 use_minimal_install_mode=$use_minimal_install_mode
