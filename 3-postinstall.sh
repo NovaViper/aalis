@@ -28,16 +28,16 @@ while true; do
 		fi
 
 		banner ${LIGHT_PURPLE} "Installing Systemd-Boot"
-		bootctl --esp-path=/boot --boot-path=/boot install
+		bootctl --esp-path=/boot/efi --boot-path=/boot install
 		output ${YELLOW} "Creating Boot Configurations"
 		microcode_hook=""
 		if [ "$microcode_type" = "amd" ]; then microcode_hook="/amd-ucode.img"; fi
 		if [ "$microcode_type" = "intel" ]; then microcode_hook="/intel-ucode.img"; fi
-		sed -i '/timeout/s/^#//g' /boot/loader/loader.conf
-		sed -i '/default/s/^/#/g' /boot/loader/loader.conf
-		echo "default arch-*.conf" >> /boot/loader/loader.conf
-		touch /boot/loader/entries/arch-latest.conf
-		cat <<-EOF >> /boot/loader/entries/arch-latest.conf
+		sed -i '/timeout/s/^#//g' /boot/efi/loader/loader.conf
+		sed -i '/default/s/^/#/g' /boot/efi/loader/loader.conf
+		echo "default arch-*.conf" >> /boot/efi/loader/loader.conf
+		touch /boot/efi/loader/entries/arch-latest.conf
+		cat <<-EOF >> /boot/efi/loader/entries/arch-latest.conf
 		title  ArchLinux
 		linux   /vmlinuz-linux
 		initrd  ${microcode_hook}
@@ -79,7 +79,7 @@ while true; do
 		fi
 
 		output ${YELLOW} "Finishing creating configuration file for Systemd-Boot..."
-		echo "options rw ${root_flags} ${swap_flags}" >> /boot/loader/entries/arch-latest.conf
+		echo "options rw ${root_flags} ${swap_flags}" >> /boot/efi/loader/entries/arch-latest.conf
 		break;;
 	G | g)
 		banner ${LIGHT_PURPLE} "Installing GRUB"
