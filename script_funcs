@@ -202,10 +202,7 @@ function makeFilesystems(){
 	# Create the filesystems
 	output ${YELLOW} "Creating Boot/EFI Filesystems..."
 	mkfs.ext2 -L BOOT ${BOOT_BIOS_DRIVE_PARTITION}
-
-	if [[ "$boot_mode" = "uefi" ]]; then
-		mkfs.vfat -F32 -n EFI ${BOOT_EFI_DRIVE_PARTITION} # Create boot filesystem for /boot
-	fi
+	mkfs.vfat -F32 -n EFI ${BOOT_EFI_DRIVE_PARTITION} # Create boot filesystem for /boot
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
@@ -291,10 +288,8 @@ function makeFilesystems(){
 	output ${YELLOW} "Creating Boot Partitions"
 	mkdir -p /mnt/boot
 	mount ${BOOT_BIOS_DRIVE_PARTITION} /mnt/boot
-	if [[ "$boot_mode" = "uefi" ]]; then
-		mkdir -p /mnt/boot/efi
-		mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
-	fi
+	mkdir -p /mnt/boot/efi
+	mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
 	output ${LIGHT_GREEN} "Done creating the filesystems!"
 }
 

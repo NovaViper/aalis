@@ -86,8 +86,8 @@ if [ -d /sys/firmware/efi ]; then
 else
 	boot_mode="bios"
 	output ${YELLOW} "Detected BIOS System, Creating BIOS Partitions..."
-	sgdisk -n 1::+2M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
-	sgdisk -n 2::+250M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+	sgdisk -n 1::+250M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
+	sgdisk -n 2::+100M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
 	sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
 	sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
 	makeFilesystems ${DISK}
