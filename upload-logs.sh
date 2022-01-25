@@ -16,7 +16,7 @@ clear
 
 
 if [[ "yes" == $(askYesNo "Would you like to upload the logs to termbin.com for developer help?") ]]; then
-    output ${LIGHT_GREEN} "Ok! I will uplod the log files now"
+    output ${LIGHT_GREEN} "Ok! I will upload the log files now"
 else
     output  ${LIGHT_RED} "Ok, I'm leaving then!"
     exit 1;
