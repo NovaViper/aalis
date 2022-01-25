@@ -86,9 +86,9 @@ while true; do
 		installPac "grub efibootmgr"
 
 		if [[ "$boot_mode" = "uefi" ]]; then
-			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --recheck ${boot_drive_name}
+			grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArchLinux --recheck ${boot_drive_name}
 		else
-			grub-install --target=i386-pc --bootloader-id=GRUB --recheck ${boot_drive_name}
+			grub-install --target=i386-pc --bootloader-id=ArchLinux --recheck ${boot_drive_name}
 		fi
 
 		output ${YELLOW} "Creating Boot Configurations"

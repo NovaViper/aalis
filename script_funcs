@@ -177,10 +177,13 @@ function test_compare_versions() {
 #   $1:     the boot mode
 #   $2:     the disk's name
 function makeFilesystems(){
+
+	banner ${LIGHT_PURPLE} "Setting up Filesystems..."
 	if [[ "${1}" =~ "nvme" ]]; then # If the boot drive is an NVMe drive
 		output ${YELLOW} "Disabling autodefrag for btrfs"
 		no_defrag="yes" # don't use autodefrag for btrfs parttions
-		BOOT_DRIVE_PARTITION="${1}p2"
+		BOOT_EFI_DRIVE_PARTITION="${1}p1"
+		BOOT_BIOS_DRIVE_PARTITION="${1}p2"
 		ROOT_DRIVE_PARTITION="${1}p3"
 	else
 		DISK_NAME=$(sed 's|/dev/||g' <(echo ${1}))
@@ -188,7 +191,8 @@ function makeFilesystems(){
 			output ${YELLOW} "Disabling autodefrag for btrfs"
 			no_defrag="yes"
 		fi
-		BOOT_DRIVE_PARTITION="${1}2"
+		BOOT_EFI_DRIVE_PARTITION="${1}1"
+		BOOT_BIOS_DRIVE_PARTITION="${1}2"
 		ROOT_DRIVE_PARTITION="${1}3"
 	fi
 
@@ -196,11 +200,13 @@ function makeFilesystems(){
 	export boot_drive_name="${1}"
 
 	# Create the filesystems
-	output ${YELLOW} "Creating Filesystems..."
-	mkfs.vfat -F32 -n "EFIBOOT" ${BOOT_DRIVE_PARTITION} # Create boot filesystem
+	output ${YELLOW} "Creating Boot/EFI Filesystems..."
+	mkfs.vfat -F32 -n EFI ${BOOT_EFI_DRIVE_PARTITION} # Create boot filesystem for /boot
+	mkfs.ext2 -L BOOT ${BOOT_BIOS_DRIVE_PARTITION}
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
+		output ${YELLOW} "Encrypting Root Partition..."
 		cryptsetup -y -v luksFormat --type luks1 ${ROOT_DRIVE_PARTITION}
 		cryptsetup open ${ROOT_DRIVE_PARTITION} cryptroot
 		export root_drive_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE_PARTITION})
@@ -214,7 +220,7 @@ function makeFilesystems(){
 				banner ${LIGHT_PURPLE} "Setting up EXT4 filesystems"
 				mkfs.ext4 -L ROOT ${ROOT_DRIVE_PARTITION}
 
-				output ${YELLOW} "Mounting everything"
+				output ${YELLOW} "Mounting root directories"
 				mount ${ROOT_DRIVE_PARTITION} /mnt
 
 				if [[ "$use_swap" = "yes"  ]]; then
@@ -240,7 +246,7 @@ function makeFilesystems(){
 				# Unmount /mnt so we can start mounting the btrfs subvolumes
 				umount /mnt
 
-				output ${YELLOW} "Mounting everything"
+				output ${YELLOW} "Mounting root directories"
 				if [[ "$no_defrag" == "yes" ]]; then
 					mount -o defaults,noatime,compress=zstd,subvol=@ ${ROOT_DRIVE_PARTITION} /mnt
 				else
@@ -281,7 +287,8 @@ function makeFilesystems(){
 	# Create boot file systems
 	mkdir -p /mnt/boot
 	mkdir -p /mnt/boot/efi
-	mount ${BOOT_DRIVE_PARTITION} /mnt/boot/
+	mount ${BOOT_BIOS_DRIVE_PARTITION} /mnt/boot
+	mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
 
 	output ${LIGHT_GREEN} "Done creating the filesystems!"
 }
