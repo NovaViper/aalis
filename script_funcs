@@ -286,8 +286,8 @@ function makeFilesystems(){
 
 	# Create boot file systems
 	mkdir -p /mnt/boot
-	mkdir -p /mnt/boot/efi
 	mount ${BOOT_BIOS_DRIVE_PARTITION} /mnt/boot
+	mkdir -p /mnt/boot/efi
 	mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
 
 	output ${LIGHT_GREEN} "Done creating the filesystems!"
