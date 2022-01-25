@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # Variable declarations
-BOOT_DIR=""
 use_crypt=""
 use_swap=""
 use_btrfs=""
@@ -77,22 +76,19 @@ sgdisk -Z ${DISK} # Destory everything on disk
 sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 
 # Create partitions
+sgdisk -n 1::+1M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
+sgdisk -n 2::+300M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
+
 if [ -d /sys/firmware/efi ]; then
 	boot_mode="uefi"
-	BOOT_DIR="boot/efi"
-	output ${YELLOW} "Creating UEFI partitions"
-	sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
-	sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
-	makeFilesystems "uefi" ${DISK}
+	output ${YELLOW} "Detected UEFI system, will make note of this for later..."
+	makeFilesystems ${DISK}
 else
 	boot_mode="bios"
-	BOOT_DIR="boot"
-	output ${YELLOW} "Creating BIOS partitions"
-	sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
-	sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
-	sgdisk -n 3::-0 --typecode=3:8300 ${DISK} # partition 3 (Root), default start, remaining
+	output ${YELLOW} "Detected BIOS system, making BIOS boot partition the same as UEFI boot partition, will also make note of this for later..."
 	sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
-	makeFilesystems "bios" ${DISK}
+	makeFilesystems ${DISK}
 fi
 
 output ${LIGHT_BLUE} "Lets confirm if everything is correct!"
@@ -130,7 +126,6 @@ fi
 output ${LIGHT_BLUE} "Saving Parameters for next step"
 touch ${SCRIPT_DIR}/sysconfig.conf
 cat <<-EOF >> ${SCRIPT_DIR}/sysconfig.conf
-BOOT_DIR=$BOOT_DIR
 use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
