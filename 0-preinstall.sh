@@ -5,6 +5,7 @@ use_crypt=""
 use_swap=""
 use_btrfs=""
 is_laptop=""
+is_vm=""
 boot_mode=""
 root_drive_uuid=""
 boot_drive_name=""
@@ -38,6 +39,8 @@ banner ${LIGHT_PURPLE} "Starting Preinstallation Phase"
 if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then output ${LIGHT_BLUE} "Removing old sysconfig.conf"; rm ${SCRIPT_DIR}/sysconfig.conf; fi # Clean up old run
 
 if [[ "yes" == $(askYesNo "Are you installing ArchLinux on a laptop?") ]]; then is_laptop="yes"; fi
+
+if [[ "yes" == $(askYesNo "Are you installing ArchLinux on a VM?") ]]; then is_vm="yes"; fi
 
 if [[ "yes" == $(askYesNo "Do you want to use SWAP?") ]]; then use_swap="yes"; fi
 
@@ -133,6 +136,7 @@ use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
 is_laptop=$is_laptop
+is_vm=$is_vm
 boot_mode=$boot_mode
 root_drive_uuid=$root_drive_uuid
 boot_drive_name=$boot_drive_name

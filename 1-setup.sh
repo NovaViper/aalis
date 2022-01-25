@@ -288,22 +288,24 @@ if [[ "$is_laptop" == "yes" ]]; then
 fi
 
 #Processor Microcode Installer
-while true; do
-	read -p "$(output ${YELLOW} "What brand is your processor? [I]ntel or [A]MD?: ")" processor
-	case $processor in
-	I | i)
-		output ${YELLOW} "========= Installing Intel Microcode ========="
-		microcode_type="intel"
-		installPac "intel-ucode"
-		break;;
-	A | a)
-		output ${YELLOW} "========= Installing AMD Microcode ========="
-		microcode_type="amd"
-		installPac "amd-ucode"
-		break;;
-	*) output ${LIGHT_RED} "Invalid input";;
-	esac
-done
+if [[ "$is_vm" != "yes" ]]; then
+	while true; do
+		read -p "$(output ${YELLOW} "What brand is your processor? [I]ntel or [A]MD?: ")" processor
+		case $processor in
+		I | i)
+			output ${YELLOW} "========= Installing Intel Microcode ========="
+			microcode_type="intel"
+			installPac "intel-ucode"
+			break;;
+		A | a)
+			output ${YELLOW} "========= Installing AMD Microcode ========="
+			microcode_type="amd"
+			installPac "amd-ucode"
+			break;;
+		*) output ${LIGHT_RED} "Invalid input";;
+		esac
+	done
+fi
 
 ## Graphics installer
 if [[ "$use_graphics" == "yes" ]]; then
