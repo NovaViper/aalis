@@ -68,7 +68,7 @@ for i in "${users[@]}"; do
 	cp /mnt/home/$i/aalis/logs/user.log /mnt/root/aalis/logs/user_$i.log
 	rm -Rf /mnt/home/$i/aalis
 done
-arch-chroot /mnt /root/aalis/3-post-setup.sh
+arch-chroot /mnt /root/aalis/3-postinstall.sh
 
 banner ${LIGHT_PURPLE} "Cleaning up the system"
 cp -R /mnt/root/aalis/logs/. ${SCRIPT_DIR}/logs

@@ -160,6 +160,6 @@ fi
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"
 yay --editmenu --nodiffmenu --save
 
-banner ${LIGHT_PURPLE} "SYSTEM READY FOR 3-post-install"
+banner ${LIGHT_PURPLE} "SYSTEM READY FOR 3-postinstall"
 sleep 3
 clear

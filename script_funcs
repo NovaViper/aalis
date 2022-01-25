@@ -208,7 +208,7 @@ function makeFilesystems(){
 
 	# If the user wants to use disk encryption, then create the luks partition map and use that instead of the disk
 	if [[ "$use_crypt" = "yes"  ]]; then
-		cryptsetup -y -v luksFormat ${ROOT_DRIVE_PARTITION}
+		cryptsetup -y -v luksFormat --type luks1 ${ROOT_DRIVE_PARTITION}
 		cryptsetup open ${ROOT_DRIVE_PARTITION} cryptroot
 		export root_drive_uuid=$(blkid -s UUID -o value ${ROOT_DRIVE_PARTITION})
 		ROOT_DRIVE_PARTITION="/dev/mapper/cryptroot"
