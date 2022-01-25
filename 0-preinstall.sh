@@ -76,17 +76,19 @@ sgdisk -Z ${DISK} # Destory everything on disk
 sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 
 # Create partitions
-sgdisk -n 1::+250M --typecode=1:8300 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
-sgdisk -n 2::+100M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
-sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
-
 if [ -d /sys/firmware/efi ]; then
 	boot_mode="uefi"
-	output ${YELLOW} "Detected UEFI system, will make note of this for later..."
+	output ${YELLOW} "Detected UEFI System, Creating UEFI Partitions..."
+	sgdisk -n 1::+250M --typecode=1:8300 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (Linux System Partition)
+	sgdisk -n 2::+100M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+	sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
 	makeFilesystems ${DISK}
 else
 	boot_mode="bios"
-	output ${YELLOW} "Detected BIOS system, making BIOS boot partition the same as UEFI boot partition, will also make note of this for later..."
+	output ${YELLOW} "Detected BIOS System, Creating BIOS Partitions..."
+	sgdisk -n 1::+2M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
+	sgdisk -n 2::+250M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+	sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
 	sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
 	makeFilesystems ${DISK}
 fi
