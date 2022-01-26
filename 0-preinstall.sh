@@ -70,6 +70,8 @@ done
 banner ${LIGHT_PURPLE} "Formatting disk, ${DISK}..."
 if grep -qs '/mnt' /proc/mounts; then
 	output ${YELLOW} "Attempting to unmount"
+	umount /mnt/boot/efi
+	umount /mnt/boot
 	umount /mnt/* -A -f
 	umount /mnt -A -f
 	if [[ "$use_crypt" = "yes"  ]]; then cryptsetup close cryptroot; fi

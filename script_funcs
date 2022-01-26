@@ -286,10 +286,16 @@ function makeFilesystems(){
 
 	# Create boot file systems
 	output ${YELLOW} "Creating Boot Partitions"
-	mkdir -p /mnt/boot
-	mount ${BOOT_BIOS_DRIVE_PARTITION} /mnt/boot
-	mkdir -p /mnt/boot/efi
-	mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
+
+	if [[ "$boot_mode" == "uefi" ]]; then
+		mkdir -p /mnt/boot
+		mount ${BOOT_BIOS_DRIVE_PARTITION} /mnt/boot
+		mkdir -p /mnt/boot/efi
+		mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot/efi
+	else
+		mkdir -p /mnt/boot
+		mount ${BOOT_EFI_DRIVE_PARTITION} /mnt/boot
+	fi
 	output ${LIGHT_GREEN} "Done creating the filesystems!"
 }
 
