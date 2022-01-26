@@ -50,33 +50,12 @@ if [[ "$term_editor" == "neovim" && "$use_term_editor_plugins" == "yes" ]]; then
 	installYay "neovim-plug-git"
 fi
 
-
-if [[ "$use_graphics" == "yes" ]]; then
-	if [[ "$use_dracula_theme" == "yes" ]]; then
-		output ${YELLOW} "Installing main Dracula theme package"
-		installYay "ant-dracula-theme-git"
-
-		output ${YELLOW} "Installing QT apps Dracula theme package"
-		installYay "ant-dracula-kvantum-theme-git"
-	fi
-
-	output ${YELLOW} "Installing Pamac"
-	output ${LIGHT_BLUE} "Note: The package archlinux-appstream-data-pamac will conflict with archlinux-appstream-data, please allow archlinux-appstream-data-pamac to install in order to install Pamac. Also allow all defaults by hitting the Enter key."
-	output ${LIGHT_BLUE} "I will give you 10 seconds to lead the above message."
-	sleep 10
-	installYaySoft "pamac-all"
-
-	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing Laptop specific tools"
-		installYay "tlpui"
-	fi
-fi
-
 if [[ "$use_swap" == "yes"  ]]; then
 	output ${YELLOW} "Installing ZRAM modules"
 	installYay "zramd"
 	sudo systemctl enable zramd.service
 fi
+
 
 if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your dotfiles with yadm now?") ]]; then
 	banner ${LIGHT_PURPLE} "Importing Yadm wizard"
@@ -99,8 +78,28 @@ if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your 
 	fi
 fi
 
-
 if [[ "$use_graphics" == "yes" ]]; then
+	if [[ "$use_dracula_theme" == "yes" ]]; then
+		output ${YELLOW} "Installing main Dracula theme package"
+		installYay "ant-dracula-theme-git"
+
+		output ${YELLOW} "Installing QT apps Dracula theme package"
+		installYay "ant-dracula-kvantum-theme-git"
+	fi
+
+	if [[ "yes" == $(askYesNo "Do you want to install Manjaro's Pamac tool? It allows for you to access Arch/AUR packages from a gui instead of terminal") ]]; then
+		output ${YELLOW} "Installing Pamac"
+		output ${LIGHT_BLUE} "Note: The package archlinux-appstream-data-pamac will conflict with archlinux-appstream-data, please allow archlinux-appstream-data-pamac to install in order to install Pamac. Also allow all defaults by hitting the Enter key."
+		output ${LIGHT_BLUE} "I will give you 10 seconds to lead the above message."
+		sleep 10
+		installYaySoft "pamac-all"
+	fi
+
+	if [[ "$is_laptop" == "yes" ]]; then
+		output ${YELLOW} "Installing Laptop specific tools"
+		installYay "tlpui"
+	fi
+
 	if [[ "$use_desktop_env_aur" == "yes" ]]; then
 		#DE Specific Install
 		banner ${LIGHT_PURPLE} "Installing DE Specific AUR packages"

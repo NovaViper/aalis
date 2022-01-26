@@ -3,7 +3,7 @@
 set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
-VERSION=3.3.0-rc2 # The current version of the script
+VERSION=3.3.0-rc3 # The current version of the script
 
 if [[ "$VERSION" == "*-*" ]]; then
 	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
@@ -74,5 +74,6 @@ banner ${LIGHT_PURPLE} "Cleaning up the system"
 cp -R /mnt/root/aalis/logs/. ${SCRIPT_DIR}/logs
 cp -R /mnt/root/aalis/sysconfig.conf ${SCRIPT_DIR}
 rm -Rf /mnt/root/aalis
+bash ${SCRIPT_DIR}/compile-logs.sh
 
-banner ${LIGHT_GREEN} "ALL DONE!! CHECK ALL OF THE LOG FILES IN THE LOG FOLDER AND CHECK" "FOR LINES WITH THE IMPORTANT TAG. THEN EJECT MEDIA AND RESTART!"
+banner ${LIGHT_GREEN} "ALL DONE!! CHECK THE compiled.log FILE IN THE LOG FOLDER AND CHECK" "FOR LINES WITH THE IMPORTANT TAG. THEN EJECT MEDIA AND RESTART!"

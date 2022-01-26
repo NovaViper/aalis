@@ -142,7 +142,7 @@ fi
 if [ "$use_crypt" = "yes" ]; then extra_hooks="encrypt ${extra_hooks}"; fi
 
 if [[ "${extra_hooks}" ]]; then
-	echo "Put these in HOOKS and delete this line after doing so: ${extra_hooks}" >> /etc/mkinitcpio.conf
+	echo "#IMPORTANT Put these in HOOKS and delete this line after doing so: ${extra_hooks}" >> /etc/mkinitcpio.conf
 	output ${LIGHT_BLUE} "IMPORTANT: Do not forget to put these parameters in the HOOKS section of /etc/mkinitcpio.conf! ${extra_hooks}"
 	output ${LIGHT_BLUE} "The order of the hooks matter! The 'encrypt' hook goes before 'filesystems' , 'btrfs' goes after 'filesystems', and finally, 'resume' goes at the very end of the paramter list"
 	output ${LIGHT_BLUE} "Be sure to run 'mkinitcpio -P' after adding the parameters! Your machine will not start properly if you skip doing this!"
