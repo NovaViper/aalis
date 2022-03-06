@@ -38,10 +38,7 @@ if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then source ${SCRIPT_DIR}/sysconfig.conf
 output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 
-
 if [[ "yes" == $(askYesNo "Would you like to install in minimal mode?") ]]; then use_minimal_install_mode="yes"; fi
-
-if [[ "yes" == $(askYesNo "Would you like to install the Dracula theme?") ]]; then use_dracula_theme="yes"; fi
 
 banner ${LIGHT_PURPLE} "Configuring Pacman"
 sed -i 's/^#Color/Color/' /etc/pacman.conf # Enable colored output
@@ -59,7 +56,6 @@ systemctl enable systemd-timesyncd
 hwclock --systohc
 localectl set-locale LANG="en_US.UTF-8" LC_TIME="en_US.UTF-8"
 localectl set-keymap us # Set keymaps
-installPac "hunspell-en_us"
 read -p 'Hostname: ' hostname
 echo "$hostname" >> /etc/hostname
 cat <<-EOF >> /etc/hosts
@@ -69,7 +65,8 @@ cat <<-EOF >> /etc/hosts
 EOF
 
 #Configure sudoers to allow every user under the wheel group to use sudo
-sed -i 's/^# %wheel ALL=(ALL)/%wheel ALL=(ALL)/' /etc/sudoers
+sed -i 's/^# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
+sed -i 's/^# %wheel ALL=(ALL:ALL) NOPASSWD: ALL/%wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers
 
 banner ${LIGHT_PURPLE} "Installing Base System Packages"
 installPac "base base-devel linux linux-firmware reflector git gnupg networkmanager dhclient dialog wpa_supplicant wireless_tools netctl inetutils openssh"
@@ -79,10 +76,44 @@ systemctl enable sshd
 systemctl enable reflector.timer
 
 banner ${LIGHT_PURPLE} "Installing Filesystem Packages"
-installPac "ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs gvfs gvfs-smb unzip unrar p7zip unarchiver"
+installPac "ntfs-3g nfs-utils e2fsprogs smartmontools btrfs-progs unzip unrar p7zip unarchiver"
+
+banner ${LIGHT_PURPLE} "Configuring Base System"
+if [[ "yes" == $(askYesNo "Do you want to install a graphical environment?") ]]; then
+	output ${LIGHT_BLUE} "Ok, I will take you to the graphics installer, but first we still have some things to configure."
+	use_graphics="yes"
+	sleep 2
+fi
+
+if [[ "$is_laptop" == "yes" ]]; then
+	output ${YELLOW} "Installing TLP and other battery management tools"
+	installPac "acpi acpi_call tlp"
+	systemctl enable tlp
+fi
+
+#Processor Microcode Installer
+if [[ "$is_vm" != "yes" ]]; then
+	while true; do
+		read -p "$(output ${YELLOW} "What brand is your processor? [I]ntel or [A]MD?: ")" processor
+		case $processor in
+		I | i)
+			output ${YELLOW} "========= Installing Intel Microcode ========="
+			microcode_type="intel"
+			installPac "intel-ucode"
+			break;;
+		A | a)
+			output ${YELLOW} "========= Installing AMD Microcode ========="
+			microcode_type="amd"
+			installPac "amd-ucode"
+			break;;
+		*) output ${LIGHT_RED} "Invalid input";;
+		esac
+	done
+fi
+
 
 banner ${LIGHT_PURPLE} "Configuring XDG User Directories"
-installPac "xdg-user-dirs xdg-utils"
+installPac "xdg-user-dirs"
 xdg-user-dirs-update # Updates user directories for XDG Specification
 
 output ${YELLOW} "Configuring environment variables for XDG specification"
@@ -101,15 +132,6 @@ export BASH_COMPLETION_USER_FILE="$XDG_CONFIG_HOME"/bash-completion/bash_complet
 export GTK_RC_FILES="$XDG_CONFIG_HOME"/gtk-1.0/gtkrc
 export GTK2_RC_FILES="$XDG_CONFIG_HOME"/gtk-2.0/gtkrc
 EOF
-
-if [[ "$use_dracula_theme" == "yes" ]]; then
-	output ${YELLOW} "Configuring environment variables for Dracula theme"
-	cat <<-EOF >> /etc/environment
-	QT_STYLE_OVERRIDE=kvantum
-	GTK_THEME='Ant-Dracula'
-	EOF
-fi
-
 
 if [[ "yes" == $(askYesNo "Would you like to use the dotfiles manager, YADM?") ]]; then
 	output ${LIGHT_BLUE} "Installing YADM"
@@ -250,17 +272,40 @@ while true; do
 
 		break;;
 	E | e)
-		output ${YELLOW} "========= Installing Emacs ========="
-		term_editor="emacs"
-		installPac "emacs"
+		if [[ "$use_graphics" != "yes" ]]; then
+			if [[ "yes" == $(askYesNo "Installing Emacs will result in installing graphical desktop packages (noteably Xorg) which may result in the system not booting properly; you will be forced to use a graphical environment to avoid this. Are you sure you want to install Emacs?") ]]; then
+				output ${YELLOW} "========= Installing Emacs ========="
+				term_editor="emacs"
+				use_graphics="yes"
+				installPac "emacs"
+			else
+				output ${LIGHT_RED} "Ok, I won't install Emacs then"
+			fi
+		else
+			output ${YELLOW} "========= Installing Emacs ========="
+			term_editor="emacs"
+			use_graphics="yes"
+			installPac "emacs"
+		fi
 		break;;
 	*) output ${LIGHT_RED} "Invalid input" ;;
 	esac
 done
 
 if [[ "$term_editor" != "emacs" && "yes" == $(askYesNo "Would you like to install Emacs also for other tasks?") ]]; then
-	output ${YELLOW} "========= Installing Emacs ========="
-	installPac "emacs"
+	if [[ "$use_graphics" != "yes" ]]; then
+		if [[ "yes" == $(askYesNo "Installing Emacs will result in installing graphical desktop packages (noteably Xorg) which may result in the system not booting properly; you will be forced to use a graphical environment to avoid this. Are you sure you want to install Emacs?") ]]; then
+			output ${YELLOW} "========= Installing Emacs ========="
+			use_graphics="yes"
+			installPac "emacs"
+		else
+			output ${LIGHT_RED} "Ok, I won't install Emacs then"
+		fi
+	else
+		output ${YELLOW} "========= Installing Emacs ========="
+		use_graphics="yes"
+		installPac "emacs"
+	fi
 fi
 
 banner ${LIGHT_PURPLE} "Adding and Configuring Users"
@@ -286,37 +331,6 @@ if [[ "${users[@]}" ]]; then
 	fi
 fi
 
-banner ${LIGHT_PURPLE} "Configuring Base System"
-if [[ "yes" == $(askYesNo "Do you want to install a graphical environment?") ]]; then
-	output ${LIGHT_BLUE} "Ok, I will take you to the graphics installer, but first we still have some things to configure."
-	use_graphics="yes"
-	sleep 2
-fi
-
-if [[ "$is_laptop" == "yes" ]]; then
-	output ${YELLOW} "Installing TLP and other battery management tools"
-	installPac "acpi acpi_call tlp"
-	systemctl enable tlp
-fi
-
-#Processor Microcode Installer
-while true; do
-	read -p "$(output ${YELLOW} "What brand is your processor? [I]ntel or [A]MD?: ")" processor
-	case $processor in
-	I | i)
-		output ${YELLOW} "========= Installing Intel Microcode ========="
-		microcode_type="intel"
-		installPac "intel-ucode"
-		break;;
-	A | a)
-		output ${YELLOW} "========= Installing AMD Microcode ========="
-		microcode_type="amd"
-		installPac "amd-ucode"
-		break;;
-	*) output ${LIGHT_RED} "Invalid input";;
-	esac
-done
-
 ## Graphics installer
 if [[ "$use_graphics" == "yes" ]]; then
 	banner ${LIGHT_PURPLE} "Installing Graphical Environment"
@@ -325,6 +339,16 @@ if [[ "$use_graphics" == "yes" ]]; then
 	#Network Manager
 	output ${YELLOW} "======= Installing GUI components for Network Manager ========"
 	installPac "network-manager-applet networkmanager-openvpn openvpn"
+
+
+	banner ${LIGHT_PURPLE} "Installing XDG User Packages for Graphical Environment"
+	installPac "xdg-utils xdg-desktop-portal"
+
+	output ${YELLOW} "======= Installing Language Dictionaries ========"
+	installPac "hunspell-en_us"
+
+	banner ${LIGHT_PURPLE} "Installing Graphical Filesystem Packages"
+	installPac "gvfs gvfs-smb"
 
 	#Bluetooth
 	if [[ "yes" == $(askYesNo "Would you like to download and enable Bluetooth?") ]]; then
@@ -400,157 +424,174 @@ if [[ "$use_graphics" == "yes" ]]; then
 			done
 		fi
 	fi
-fi
 
-#Graphics Card Driver Installer
-while true; do
-	read -p "$(output ${YELLOW} "What brand is your graphics? [I]ntel, [A]MD or [N]vidia?: ")" graphics
-	case $graphics in
-	I | i)
-		output ${YELLOW} "========= Installing Intel Graphics ========="
-		installPac "xf86-video-intel mesa"
+	#Graphics Card Driver Installer
+	while true; do
+		read -p "$(output ${YELLOW} "What brand is your graphics? [I]ntel, [A]MD, [N]vidia, or N[o]ne (For VMs)?: ")" graphics
+		case $graphics in
+		I | i)
+			output ${YELLOW} "========= Installing Intel Graphics ========="
+			installPac "xf86-video-intel mesa"
 
-		if [[ "$use_minimal_install_mode" != "yes" ]]; then
-			output ${YELLOW} "Installing Intel Vulkan packages for Steam"
-			installPac "vulkan-intel vulkan-driver lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools"
-		fi
-		break;;
-	A | a)
-		output ${YELLOW} "========= Installing AMD Graphics ========="
-		installPac "xf86-video-amdgpu mesa"
-		if [[ "$use_minimal_install_mode" != "yes" ]]; then
-			while true; do
-				read -p "$(output ${YELLOW}"Are you using a [A]MD GPU or a [R]eadon GPU? ")" subgpu
-				case $subgpu in
-				A | a)
-					output ${YELLOW} "Installing AMD Vulkan packages for Steam"
-					installPac "amdvlk lib32-amdvlk vulkan-driver vulkan-tools i2c-tools"
-					break;;
-				R | r)
-					output ${YELLOW} "Installing Radeon Vulkan packages for Steam"
-					installPac "vulkan-radeon lib32-vulkan-radeon vulkan-driver vulkan-tools i2c-tools"
-					break;;
-				*) output ${LIGHT_RED} "Invaild Input";;
-				esac
-			done
-		fi
-		break;;
-	N | n)
-		output ${YELLOW} "========= Installing Nvidia Graphics ========="
-		installPac "nvidia nvidia-utils nvidia-settings"
+			if [[ "$use_minimal_install_mode" != "yes" ]]; then
+				output ${YELLOW} "Installing Intel Vulkan packages for Steam"
+				installPac "vulkan-intel vulkan-driver lib32-mesa lib32-vulkan-intel vulkan-tools i2c-tools"
+			fi
+			break;;
+		A | a)
+			output ${YELLOW} "========= Installing AMD Graphics ========="
+			installPac "xf86-video-amdgpu mesa"
+			if [[ "$use_minimal_install_mode" != "yes" ]]; then
+				while true; do
+					read -p "$(output ${YELLOW}"Are you using a [A]MD GPU or a [R]eadon GPU? ")" subgpu
+					case $subgpu in
+					A | a)
+						output ${YELLOW} "Installing AMD Vulkan packages for Steam"
+						installPac "amdvlk lib32-amdvlk vulkan-driver vulkan-tools i2c-tools"
+						break;;
+					R | r)
+						output ${YELLOW} "Installing Radeon Vulkan packages for Steam"
+						installPac "vulkan-radeon lib32-vulkan-radeon vulkan-driver vulkan-tools i2c-tools"
+						break;;
+					*) output ${LIGHT_RED} "Invaild Input";;
+					esac
+				done
+			fi
+			break;;
+		N | n)
+			output ${YELLOW} "========= Installing Nvidia Graphics ========="
+			installPac "nvidia nvidia-utils nvidia-settings"
 
-		if [[ "$use_minimal_install_mode" != "yes" ]]; then
-			output ${YELLOW} "Installing Nvidia Vulkan packages for Steam"
-			installPac "lib32-nvidia-utils vulkan-tools i2c-tools vulkan-driver"
-		fi
-		break;;
-	*) output ${LIGHT_RED} "Invalid input" ;;
-	esac
-done
+			if [[ "$use_minimal_install_mode" != "yes" ]]; then
+				output ${YELLOW} "Installing Nvidia Vulkan packages for Steam"
+				installPac "lib32-nvidia-utils vulkan-tools i2c-tools vulkan-driver"
+			fi
+			break;;
+		O | o)
+			output ${YELLOW} "There's nothing else to do for Virtual Machines! Will move on to next steps"
+			sleep 2
+			break;;
+		*) output ${LIGHT_RED} "Invalid input" ;;
+		esac
+	done
 
-if [[ "$use_minimal_install_mode" != "yes" ]]; then
-	#Font packs install
-	output ${YELLOW} "====== Installing font packs ======"
-	installPac "dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
+	if [[ "$use_minimal_install_mode" != "yes" ]]; then
+		#Font packs install
+		output ${YELLOW} "====== Installing font packs ======"
+		installPac "dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
 
-	#Base user packages
-	output ${YELLOW} "====== Installing base user packages ====="
-	installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module steam"
-else
-	#Base user packages
-	output ${YELLOW} "====== Installing base user packages ====="
-	installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module"
-fi
+		#Base user packages
+		output ${YELLOW} "====== Installing base user packages ====="
+		installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module steam"
+	else
+		#Base user packages
+		output ${YELLOW} "====== Installing base user packages ====="
+		installPac "firefox vlc libreoffice-fresh discord htop appmenu-gtk-module"
+	fi
 
+	output ${YELLOW} "====== Installing theming packages for GTK and QT to match environments ====="
+	installPac "kvantum-qt5"
+	cat <<-EOF >> /etc/environment
+	QT_QPA_PLATFORMTHEME=qt5ct
+	EOF
 
+	if [[ "yes" == $(askYesNo "Would you like to install the Dracula theme?") ]]; then use_dracula_theme="yes"; fi
 
-#DE Install
-while true; do
-	output ${YELLOW} "What desktop environment do you want to install?"
-	read -p "$(output ${YELLOW} "[X]fce, [G]nome, [K]DE, or [C]innamon? ")" de
-	case $de in
-	X | x) # XFCE
-		output ${YELLOW} "Installing XFCE and basic desktop apps"
-		desktop_env="xfce"
-		installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xfce4 xfce4-goodies arc-gtk-theme arc-icon-theme file-roller catfish xreader gparted pavucontrol qalculate-gtk deluge-gtk baobab"
-		systemctl enable lightdm
-		output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-		echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+	if [[ "$use_dracula_theme" == "yes" ]]; then
+		output ${YELLOW} "Configuring environment variables for Dracula theme"
+		cat <<-EOF >> /etc/environment
+		GTK_THEME='Ant-Dracula'
+		EOF
+	fi
 
-		# Ask to remove XFCE's ristretto program
-		if [[ "yes" == $(askYesNo "Do you want to use geeqie instead of XFCE's default image viewer ristretto? geeqie has some features that risteretto is missing like saving edited images.") ]]; then
-			installPac "geeqie"
-			removePac "ristretto"
-		fi
-		# Use Bluetooth if the user wanted to install it
-		if [ "$use_bluetooth" == "yes" ]; then
-			output ${YELLOW} "Installing GUI for bluetooth"
-			installPac "blueman"
-		fi
-		break;;
+	#DE Install
+	while true; do
+		output ${YELLOW} "What desktop environment do you want to install?"
+		read -p "$(output ${YELLOW} "[X]fce, [G]nome, [K]DE, or [C]innamon? ")" de
+		case $de in
+		X | x) # XFCE
+			output ${YELLOW} "Installing XFCE and basic desktop apps"
+			desktop_env="xfce"
+			installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xdg-desktop-portal-gtk xfce4 xfce4-goodies arc-gtk-theme arc-icon-theme file-roller catfish xreader gparted pavucontrol qalculate-gtk deluge-gtk baobab"
+			systemctl enable lightdm
+			output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+			echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 
-	G | g) # Gnome
-		output ${YELLOW} "Installing Gnome and basic desktop apps"
-		desktop_env="gnome"
-		installPac "xorg gdm gnome gnome-extra gnome-tweaks arc-gtk-theme arc-icon-theme file-roller gparted pavucontrol qalculate-gtk transmission-gtk baobab"
-		systemctl enable gdm
-		output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-		echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+			# Ask to remove XFCE's ristretto program
+			if [[ "yes" == $(askYesNo "Do you want to use geeqie instead of XFCE's default image viewer ristretto? geeqie has some features that risteretto is missing like saving edited images.") ]]; then
+				installPac "geeqie"
+				removePac "ristretto"
+			fi
+			# Use Bluetooth if the user wanted to install it
+			if [ "$use_bluetooth" == "yes" ]; then
+				output ${YELLOW} "Installing GUI for bluetooth"
+				installPac "blueman"
+			fi
+			break;;
 
-		# Use Bluetooth if the user wanted to install it
-		if [ "$use_bluetooth" == "yes" ]; then
-			output ${YELLOW} "Installing GUI for bluetooth"
-			installPac "blueman"
-		fi
-		break;;
+		G | g) # Gnome
+			output ${YELLOW} "Installing Gnome and basic desktop apps"
+			desktop_env="gnome"
+			installPac "xorg gdm gnome gnome-extra gnome-tweaks xdg-desktop-portal-gnome arc-gtk-theme arc-icon-theme file-roller gparted pavucontrol qalculate-gtk transmission-gtk baobab"
+			systemctl enable gdm
+			output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+			echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 
-	K | k) # KDE
-		output ${YELLOW} "Installing KDE and basic desktop apps"
-		desktop_env="kde"
-		installPac "xorg sddm ark audiocd-kio breeze-gtk dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools partitionmanager system-config-printer cups-pk-helper"
-		systemctl enable sddm
-		output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
-		echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
+			# Use Bluetooth if the user wanted to install it
+			if [ "$use_bluetooth" == "yes" ]; then
+				output ${YELLOW} "Installing GUI for bluetooth"
+				installPac "blueman"
+			fi
+			break;;
 
-		# Use Bluetooth if the user wanted to install it
-		if [ "$use_bluetooth" == "yes" ]; then
-			output ${YELLOW} "Installing GUI for bluetooth"
-			installPac "bluedevil"
-		fi
+		K | k) # KDE
+			output ${YELLOW} "Installing KDE and basic desktop apps"
+			desktop_env="kde"
+			installPac "xorg sddm ark audiocd-kio breeze-gtk xdg-desktop-portal-kde dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools partitionmanager system-config-printer cups-pk-helper kfind plasma-workspace-wallpapers"
+			systemctl enable sddm
+			output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
+			echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment
 
-		# Install touchscreen laptop drivers if prompted to do so earlier
-		if [[ "$is_laptop" == "yes" && "$is_touchscreen" == "yes" ]]; then
-			output ${YELLOW} "Installing GUI for Wacom drivers"
-			installPac "kcm-wacomtablet"
-		fi
+			# Use Bluetooth if the user wanted to install it
+			if [ "$use_bluetooth" == "yes" ]; then
+				output ${YELLOW} "Installing GUI for bluetooth"
+				installPac "bluedevil"
+			fi
 
-		# Add KWallet to pam for auto unlock
-		output ${YELLOW} "Adding Kwallet to PAM"
-		sed -i '4s/.//' /etc/pam.d/sddm
-		sed -i '15s/.//' /etc/pam.d/sddm
-		break;;
+			# Install touchscreen laptop drivers if prompted to do so earlier
+			if [[ "$is_laptop" == "yes" && "$is_touchscreen" == "yes" ]]; then
+				output ${YELLOW} "Installing GUI for Wacom drivers"
+				installPac "kcm-wacomtablet"
+			fi
 
-	C | c) #Cinnamon
-		output ${YELLOW} "Installing Cinnamon and basic desktop apps"
-		desktop_env="cinnamon"
-		installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader"
-		systemctl enable lightdm
-		output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
-		echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
+			# Add KWallet to pam for auto unlock
+			output ${YELLOW} "Adding Kwallet to PAM"
+			sed -i '4s/.//' /etc/pam.d/sddm
+			sed -i '15s/.//' /etc/pam.d/sddm
+			break;;
 
-		# Use Bluetooth if the user wanted to install it
-		if [ "$use_bluetooth" == "yes" ]; then
-			output ${YELLOW} "Installing GUI for bluetooth"
-			installPac "blueman"
-		fi
-		break;;
-	*) output ${LIGHT_RED} "Invalid input" ;;
-	esac
-done
+		C | c) #Cinnamon
+			output ${YELLOW} "Installing Cinnamon and basic desktop apps"
+			desktop_env="cinnamon"
+			installPac "xorg lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings xdg-desktop-portal-gtk cinnamon arc-gtk-theme arc-icon-theme gnome-shell file-roller nemo-fileroller gparted pavucontrol qalculate-gtk deluge-gtk baobab xreader"
+			systemctl enable lightdm
+			output ${YELLOW} "Setting SSH_ASKPASS variable to gnome-ssh-askpass3 for gui ssh prompts"
+			echo "SSH_ASKPASS=/usr/bin/gnome-ssh-askpass3" >> /etc/environment
 
+			# Use Bluetooth if the user wanted to install it
+			if [ "$use_bluetooth" == "yes" ]; then
+				output ${YELLOW} "Installing GUI for bluetooth"
+				installPac "blueman"
+			fi
+			break;;
+		*) output ${LIGHT_RED} "Invalid input" ;;
+		esac
+	done
 
-if [[ "yes" == $(askYesNo "Do you want to install extra AUR packages for $desktop_env?") ]]; then
-	use_desktop_env_aur="yes"
+	if [[ "yes" == $(askYesNo "Do you want to install extra AUR packages for $desktop_env?") ]]; then
+		use_desktop_env_aur="yes"
+	fi
+
 fi
 
 # Install user specified aur packages, filters out AUR packages from ArchLinux repo packages

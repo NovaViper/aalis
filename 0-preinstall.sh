@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 # Variable declarations
-BOOT_DIR=""
 use_crypt=""
 use_swap=""
 use_btrfs=""
 is_laptop=""
+is_vm=""
 boot_mode=""
 root_drive_uuid=""
 boot_drive_name=""
+bootloader=""
 RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}') # Get the current usable RAM of the system in KB
 RAM_MB=$(expr $RAM_KB / 1024)
 RAM_GB=$(expr $RAM_MB / 1024)
@@ -40,9 +41,32 @@ if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then output ${LIGHT_BLUE} "Removing old 
 
 if [[ "yes" == $(askYesNo "Are you installing ArchLinux on a laptop?") ]]; then is_laptop="yes"; fi
 
+if [[ "yes" == $(askYesNo "Are you installing ArchLinux on a VM?") ]]; then is_vm="yes"; fi
+
 if [[ "yes" == $(askYesNo "Do you want to use SWAP?") ]]; then use_swap="yes"; fi
 
 if [[ "yes" == $(askYesNo "Do you want to use LUKS disk encryption?") ]]; then use_crypt="yes"; fi
+
+
+while true; do
+	read -p "$(output ${YELLOW} "What bootloader do you want to use? [G]rub, or [S]ystem-Boot?: ")" boot
+	case $boot in
+		S | s)
+			if [ ! -d /sys/firmware/efi ]; then
+				output ${LIGHT_RED} "Systemd-Boot only supports UEFI firmware! Please select something else!"
+				continue
+			fi
+
+			output ${YELLOW} "Ok, I will make sure to configure the system for systemd-boot"
+			bootloader="systemd"
+			break;;
+		G | g)
+			output ${YELLOW} "Ok, I will make sure to configure the system for GRUB"
+			bootloader="grub"
+			break;;
+		*) output ${LIGHT_RED} "Invalid input" ;;
+	esac
+done
 
 while true; do
 	banner ${LIGHT_PURPLE} "Select a disk you wish to format"
@@ -68,6 +92,8 @@ done
 banner ${LIGHT_PURPLE} "Formatting disk, ${DISK}..."
 if grep -qs '/mnt' /proc/mounts; then
 	output ${YELLOW} "Attempting to unmount"
+	umount /mnt/boot/efi
+	umount /mnt/boot
 	umount /mnt/* -A -f
 	umount /mnt -A -f
 	if [[ "$use_crypt" = "yes"  ]]; then cryptsetup close cryptroot; fi
@@ -79,21 +105,28 @@ sgdisk -a 2048 -o ${DISK} # New gpt partition table with 2048 alignment
 # Create partitions
 if [ -d /sys/firmware/efi ]; then
 	boot_mode="uefi"
-	BOOT_DIR="boot"
-	output ${YELLOW} "Creating UEFI partitions"
-	sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
-	sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
-	makeFilesystems "uefi" ${DISK}
+	output ${YELLOW} "Detected UEFI System, Creating UEFI Partitions..."
+	if [[ "$bootloader" = "grub" ]]; then
+		output ${YELLOW} "Setting up filesystems for Grub..."
+		sgdisk -n 1::+250M --typecode=1:bc13c2ff-59e6-4262-a352-b275fd6f7172 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (Linux System Partition)
+		sgdisk -n 2::+100M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+		sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
+	elif [[ "$bootloader" = "systemd" ]]; then
+		output ${YELLOW} "Setting up filesystems for Systemd-boot..."
+		sgdisk -n 1::+512M --typecode=1:ef00 ${DISK} # partition 1 (UEFI Boot Partition)
+		sgdisk -n 2::-0 --typecode=2:8300 ${DISK} # partition 2 (Root), default start, remaining
+	fi
 else
 	boot_mode="bios"
-	BOOT_DIR="boot"
-	output ${YELLOW} "Creating BIOS partitions"
-	sgdisk -n 1::+1M --typecode=1:ef02 ${DISK} # partition 1 (BIOS Boot Partition)
-	sgdisk -n 2::+512M --typecode=2:ef00 ${DISK} # partition 2 (UEFI Boot Partition)
-	sgdisk -n 3::-0 --typecode=3:8300 ${DISK} # partition 3 (Root), default start, remaining
-	sgdisk -A 1:set:2 ${DISK} # Make BIOS boot partition the same as the UEFI Boot Partition
-	makeFilesystems "bios" ${DISK}
+	output ${YELLOW} "Detected BIOS System, Creating BIOS Partitions..."
+	sgdisk -n 1::+1M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
+	sgdisk -n 2::+300M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+	sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
+	sgdisk -A 1:set:2 ${DISK}
 fi
+
+makeFilesystems ${DISK}
+
 
 output ${LIGHT_BLUE} "Lets confirm if everything is correct!"
 output ${YELLOW} "Checking if there are any mounts"
@@ -130,14 +163,15 @@ fi
 output ${LIGHT_BLUE} "Saving Parameters for next step"
 touch ${SCRIPT_DIR}/sysconfig.conf
 cat <<-EOF >> ${SCRIPT_DIR}/sysconfig.conf
-BOOT_DIR=$BOOT_DIR
 use_swap=$use_swap
 use_btrfs=$use_btrfs
 use_crypt=$use_crypt
 is_laptop=$is_laptop
+is_vm=$is_vm
 boot_mode=$boot_mode
 root_drive_uuid=$root_drive_uuid
 boot_drive_name=$boot_drive_name
+bootloader=$bootloader
 EOF
 
 banner ${LIGHT_GREEN} "SYSTEM READY FOR 1-setup"

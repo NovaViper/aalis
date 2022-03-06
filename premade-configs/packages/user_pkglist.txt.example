@@ -4,6 +4,9 @@ obs-studio
 papirus-icon-theme
 xournalpp-git
 xclip
+xdotool
+xorg-xprop
+xorg-xwininfo
 copyq
 syncthing
 isync
@@ -19,3 +22,13 @@ yubikey-manager-qt
 yubikey-personalization-gui
 pam-u2f
 steam
+protonmail-bridge
+python-black
+python-pyflakes
+python-isort
+python-pandas
+python-nose
+python-pytest
+netcoredbg
+sqlite3
+shellcheck

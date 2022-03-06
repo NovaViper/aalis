@@ -4,6 +4,19 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 4.0.0
++ Added qt5ct for platform theme unification
++ Finally added /boot/efi partition for ESP, will only configure this way for GRUB bootloader
++ Added VM install option
++ Added more packages to example (for my perosnal use)
++ Added compile logs function, compiles all logs and installer configurations into one file to upload so it's easy to read the installer logs
+^ Made added config folders owned by the user instead of root
+^ Made bootloader selection earlier in the script, which will affect how the boot partitions are created and mounted
+^ Made several GUI related install sections only available when you explicitly want to install the graphical environment
+^ Made archlinux-keyring update twice
+* Fixed Sudoers not working properly
+- Removed Dracula theme files
+
 Version 3.2.2
 ^ Made some small changes
 - Used to use /efi, now it doesn't because of GRUB and LUKS2 incompatabilities

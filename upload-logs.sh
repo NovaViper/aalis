@@ -10,10 +10,10 @@ echo    "         Preflight Check         "
 echo -n "---------------------------------"
 echo -e "\e[39m"
 if [ -f ${SCRIPT_DIR}/script_funcs ]; then source ${SCRIPT_DIR}/script_funcs; output ${LIGHT_GREEN} "FOUND ${SCRIPT_DIR}/script_funcs!"; else echo -e "\e[31mCannot find ${SCRIPT_DIR}/script_funcs, cannot continue\e[39m"; sleep 2; exit 1; fi
+if [ -f ${SCRIPT_DIR}/sysconfig.conf ]; then source ${SCRIPT_DIR}/sysconfig.conf; output ${LIGHT_GREEN} "FOUND ${SCRIPT_DIR}/sysconfig.conf!"; else echo -e "\e[31mCannot find ${SCRIPT_DIR}/sysconfig.conf, cannot continue\e[39m"; sleep 2; exit 1; fi
 output ${LIGHT_GREEN} "Preflight Check done! Moving on in 2 seconds"
 sleep 2
 clear
-
 
 if [[ "yes" == $(askYesNo "Would you like to upload the logs to termbin.com for developer help?") ]]; then
     output ${LIGHT_GREEN} "Ok! I will upload the log files now"
@@ -22,5 +22,5 @@ else
     exit 1;
 fi
 
-cat ${SCRIPT_DIR}/logs/* | nc termbin.com 9999
+cat ${SCRIPT_DIR}/logs/compiled.log | nc termbin.com 9999
 output ${LIGHT_GREEN} "All done!"
