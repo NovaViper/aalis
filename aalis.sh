@@ -3,7 +3,7 @@
 set -e # Make script fail if something fails
 
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
-VERSION=4.0.0 # The current version of the script
+VERSION=4.0.1 # The current version of the script
 
 if [[ "$VERSION" == "*-*" ]]; then
 	ONLINE_VERSION=$(curl -s 'https://gitlab.com/api/v4/projects/31469197/releases' | grep tag_name | cut -d':' -f2 | cut -d'"' -f2)
@@ -32,7 +32,7 @@ test_compare_versions $VERSION $ONLINE_VERSION || :
 sleep 2
 
 
-installPac "archlinux-keyring" #update keyrings to latest to prevent packages failing to install
+pacman -S --noconfirm archlinux-keyring #update keyrings to latest to prevent packages failing to install
 
 banner ${LIGHT_PURPLE} "Setting font size"
 installPac "terminus-font figlet"

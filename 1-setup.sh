@@ -321,12 +321,32 @@ if [[ "${users[@]}" ]]; then
 		echo
 		for i in "${users[@]}"; do
 			usermod -s /bin/zsh $i
+
+			# Prompt to install plugins if user is NovaViper
+			if [[ "$i" == "novaviper" ]] && [[ "yes" == $(askYesNo "Are you NovaViper (the developer of the script)?" ) ]]; then
+				output ${YELLOW} "Adding extra packages for NovaViper's ZSH Plugins"
+				installPac "fzf subversion"
+				use_shell_type_plugins="yes"
+			fi
 		done
 	elif [[ "$shell_type" == "fish" ]]; then
 		output ${YELLOW} "====== Configuring additional users for Fish ======"
 		echo
 		for i in "${users[@]}"; do
 			usermod -s /bin/fish $i
+		done
+	fi
+fi
+
+#Configure Terminal Editors for additional users
+if [[ "${users[@]}" ]]; then
+	if [[ "$term_editor" == "neovim" ]]; then
+		for i in "${users[@]}"; do
+			# Prompt to install plugins if user is NovaViper
+			if [[ "$i" == "novaviper" ]] && [[ "yes" == $(askYesNo "Are you NovaViper (the developer of the script)?" ) ]]; then
+				output ${YELLOW} "Noting to download extra packages for NovaViper's Neovim Plugins later on"
+				use_term_editor_plugins="yes"
+			fi
 		done
 	fi
 fi

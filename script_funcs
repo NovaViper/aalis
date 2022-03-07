@@ -215,7 +215,7 @@ function makeFilesystems(){
 	output ${YELLOW} "Creating Boot/EFI Filesystems..."
 
 	if [[ ! "$bootloader" = "systemd" ]]; then
-		mkfs.ext2 -L BOOT ${BOOT_BIOS_DRIVE_PARTITION} # Create ext2 filesystem for BIOSBOOT partition
+		mkfs.ext4 -L BOOT ${BOOT_BIOS_DRIVE_PARTITION} # Create ext4 filesystem for BIOSBOOT partition
 		mkfs.vfat -F32 -n EFI ${BOOT_EFI_DRIVE_PARTITION} # Create vFAT filesystem for EFIBOOT
 	else
 		mkfs.vfat -F32 -n EFI ${BOOT_DRIVE_PARTITION} # Create vFAT filesystem for boot

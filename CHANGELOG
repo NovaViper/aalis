@@ -4,6 +4,11 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 4.0.1
++ Added prompts to install plugins for ZSH and Neovim (specifically for main developer's own use)
+* Fixed issue where archlinux-keyring wasn't being installed during the script's startup
+^ Changed BIOS Boot partition from EXT2 to EXT4
+
 Version 4.0.0
 + Added qt5ct for platform theme unification
 + Finally added /boot/efi partition for ESP, will only configure this way for GRUB bootloader
