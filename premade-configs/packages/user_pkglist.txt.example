@@ -32,3 +32,7 @@ python-pytest
 netcoredbg
 sqlite3
 shellcheck
+graphviz
+plasma5-applets-latte-spacer
+plasma5-applets-latte-sidebar-button
+plasma5-applets-latte-separator

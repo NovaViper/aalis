@@ -19,6 +19,8 @@ use_minimal_install_mode=""
 microcode_type=""
 desktop_env=""
 use_desktop_env_aur=""
+battery_tool=""
+is_developer=""
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )" # Locate and save the script's current base directory
 
 #Enable logging!
@@ -85,11 +87,25 @@ if [[ "yes" == $(askYesNo "Do you want to install a graphical environment?") ]];
 	sleep 2
 fi
 
-if [[ "$is_laptop" == "yes" ]]; then
-	output ${YELLOW} "Installing TLP and other battery management tools"
-	installPac "acpi acpi_call tlp"
-	systemctl enable tlp
-fi
+banner ${LIGHT_PURPLE} "Installing Power Management Tools"
+while true; do
+	read -p "$(output ${YELLOW} "What power management tool do you want to use? [T]LP or [P]ower Profiles Daemon?: ")" battery
+	case $battery in
+	T | t)
+		output ${YELLOW} "========= Installing TLP ========="
+		battery_tool="tlp"
+		installPac "acpi acpi_call tlp"
+		systemctl enable tlp
+		break;;
+	P | p)
+		output ${YELLOW} "========= Installing Power Profiles Daemon ========="
+		battery_tool="ppd"
+		installPac "power-profiles-daemon"
+		systemctl enable power-profiles-daemon
+		break;;
+	*) output ${LIGHT_RED} "Invalid input";;
+	esac
+done
 
 #Processor Microcode Installer
 if [[ "$is_vm" != "yes" ]]; then
@@ -314,40 +330,36 @@ addRootPass
 #Additional User Prompt
 while [[ "yes" == $(askYesNo "Would you like to add any additional users?") ]]; do addUserPass; done
 
-#Configure Shell environments for additional users
+#Configure Shell environments and Terminal Editors for additional users
 if [[ "${users[@]}" ]]; then
-	if [[ "$shell_type" == "zsh" ]]; then
-		output ${YELLOW} "====== Configuring additional users for ZSH ======"
-		echo
-		for i in "${users[@]}"; do
-			usermod -s /bin/zsh $i
+	for i in "${users[@]}"; do
+		# Prompt to install plugins if user is NovaViper
+		if [[ "$i" == "novaviper" ]] && [[ "yes" == $(askYesNo "Are you NovaViper (the developer of the script)?") ]]; then
+			is_developer="yes"
+		fi
 
-			# Prompt to install plugins if user is NovaViper
-			if [[ "$i" == "novaviper" ]] && [[ "yes" == $(askYesNo "Are you NovaViper (the developer of the script)?" ) ]]; then
+		if [[ "$shell_type" == "zsh" ]]; then
+			output ${YELLOW} "====== Configuring additional users for ZSH ======"
+			# Add packages for myself
+			if [[ "$is_developer" == "yes" ]]; then
 				output ${YELLOW} "Adding extra packages for NovaViper's ZSH Plugins"
 				installPac "fzf subversion"
 				use_shell_type_plugins="yes"
 			fi
-		done
-	elif [[ "$shell_type" == "fish" ]]; then
-		output ${YELLOW} "====== Configuring additional users for Fish ======"
-		echo
-		for i in "${users[@]}"; do
-			usermod -s /bin/fish $i
-		done
-	fi
-fi
 
-#Configure Terminal Editors for additional users
-if [[ "${users[@]}" ]]; then
+			usermod -s /bin/zsh $i
+
+		elif [[ "$shell_type" == "fish" ]]; then
+			output ${YELLOW} "====== Configuring additional users for Fish ======"
+			usermod -s /bin/fish $i
+		fi
+	done
+
 	if [[ "$term_editor" == "neovim" ]]; then
-		for i in "${users[@]}"; do
-			# Prompt to install plugins if user is NovaViper
-			if [[ "$i" == "novaviper" ]] && [[ "yes" == $(askYesNo "Are you NovaViper (the developer of the script)?" ) ]]; then
-				output ${YELLOW} "Noting to download extra packages for NovaViper's Neovim Plugins later on"
-				use_term_editor_plugins="yes"
-			fi
-		done
+		if [[ "$is_developer" == "yes" ]]; then
+			output ${YELLOW} "Noting to download extra packages for NovaViper's Neovim Plugins later on"
+			use_term_editor_plugins="yes"
+		fi
 	fi
 fi
 
@@ -641,6 +653,8 @@ use_yadm=$use_yadm
 microcode_type=$microcode_type
 desktop_env=$desktop_env
 use_desktop_env_aur=$use_desktop_env_aur
+battery_tool=$battery_tool
+is_developer=$is_developer
 EOF
 
 if [ $(whoami) = "root"  ];
