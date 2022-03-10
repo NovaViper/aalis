@@ -111,8 +111,10 @@ if [[ "$use_graphics" == "yes" ]]; then
 	fi
 
 	if [[ "$is_laptop" == "yes" ]]; then
-		output ${YELLOW} "Installing Laptop specific tools"
-		installYay "tlpui"
+		banner ${LIGHT_PURPLE} "Installing Laptop specific tools"
+		if [[ "$battery_tool" == "tlp" ]]; then
+			installYay "tlpui"
+		fi
 	fi
 
 	if [[ "$use_desktop_env_aur" == "yes" ]]; then

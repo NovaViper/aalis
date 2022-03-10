@@ -4,6 +4,12 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 4.0.2
++ Added developer option (for dev's use only)
++ Added more packages in example package list
++ Added Power Profiles Daemon install option
+^ Changed BIOS Boot partition back to EXT2, EXT4 caused booting issues
+
 Version 4.0.1
 + Added prompts to install plugins for ZSH and Neovim (specifically for main developer's own use)
 * Fixed issue where archlinux-keyring wasn't being installed during the script's startup
