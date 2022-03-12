@@ -4,6 +4,11 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 4.1.0
++ Script now can enable nvidia systemctl services for suspension
++ Added Konsave so script can now set the Dracula theme for KDE (when selected to install of course)
+- Removed yadm decrypt feature, doesn't work in chroot
+
 Version 4.0.2
 + Added developer option (for dev's use only)
 + Added more packages in example package list

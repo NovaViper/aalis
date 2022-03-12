@@ -56,7 +56,6 @@ if [[ "$use_swap" == "yes"  ]]; then
 	sudo systemctl enable zramd.service
 fi
 
-
 if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your dotfiles with yadm now?") ]]; then
 	banner ${LIGHT_PURPLE} "Importing Yadm wizard"
 	while true; do
@@ -70,12 +69,6 @@ if [[ "$use_yadm" = "yes" && "yes" == $(askYesNo "Would you like to import your 
 			output ${LIGHT_RED} "This cannot be blank! Please try again!"
 		fi
 	done
-	if [[ "yes" == $(askYesNo "Would you like to decrypt your encrypted yadm configurations? (You can choose to do this later!)") ]]; then
-		yadm decrypt
-	else
-		output ${LIGHT_BLUE} "Ok, I won't decrypt them, but you can always run 'yadm decrypt' to decrypt them later on!"
-		sleep 3
-	fi
 fi
 
 if [[ "$use_graphics" == "yes" ]]; then
@@ -178,8 +171,18 @@ if [ -f ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt ]; then
 	installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt))"
 fi
 
+export PATH=$PATH:~/.local/bin
+
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"
 yay --editmenu --nodiffmenu --save
+
+if [[ "$use_dracula_theme" == "yes" ]] && [[ "$desktop_env" == "kde" ]]; then
+	output ${YELLOW} "Setting Dracula Theme for KDE"
+	python -m pip install konsave
+	python -m konsave -i ${SCRIPT_DIR}/premade-configs/Dracula.knsv
+	sleep 1
+	python -m konsave -a Dracula
+fi
 
 banner ${LIGHT_PURPLE} "SYSTEM READY FOR 3-postinstall"
 sleep 3
