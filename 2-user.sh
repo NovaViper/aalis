@@ -178,8 +178,18 @@ if [ -f ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt ]; then
 	installYay "$(comm -12 <(yay -Slaq | sort) <(sort ${SCRIPT_DIR}/premade-configs/packages/user_pkglist.txt))"
 fi
 
+export PATH=$PATH:~/.local/bin
+
 output ${YELLOW} "Making yay ask to edit pkgbuild files and not ask for diff menu"
 yay --editmenu --nodiffmenu --save
+
+if [[ "$use_dracula_theme" == "yes" ]] && [[ "$desktop_env" == "kde" ]]; then
+	output ${YELLOW} "Setting Dracula Theme for KDE"
+	python pip install konsave
+	python -m konsave -i ${SCRIPT_DIR}/premade-configs/Dracula.knsv
+	sleep 1
+	python -m konsave -a Dracula
+fi
 
 banner ${LIGHT_PURPLE} "SYSTEM READY FOR 3-postinstall"
 sleep 3

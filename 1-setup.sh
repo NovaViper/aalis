@@ -493,6 +493,7 @@ if [[ "$use_graphics" == "yes" ]]; then
 		N | n)
 			output ${YELLOW} "========= Installing Nvidia Graphics ========="
 			installPac "nvidia nvidia-utils nvidia-settings"
+			systemctl enable nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
 
 			if [[ "$use_minimal_install_mode" != "yes" ]]; then
 				output ${YELLOW} "Installing Nvidia Vulkan packages for Steam"
