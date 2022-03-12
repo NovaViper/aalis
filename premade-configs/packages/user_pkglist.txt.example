@@ -29,7 +29,6 @@ python-isort
 python-pandas
 python-nose
 python-pytest
-netcoredbg
 sqlite3
 shellcheck
 graphviz
