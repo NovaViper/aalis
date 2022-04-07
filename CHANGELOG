@@ -5,6 +5,9 @@ KEY:
 ^ = enhancement/change
 
 Version 4.1.1
++ Added more environment variables for XDG compliance
+
+Version 4.1.1
 - No longer uses qt5ct for theming
 * Made pip install earlier
 * Trying to fix konsave installer
