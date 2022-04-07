@@ -4,6 +4,11 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
+Version 4.1.1
+- No longer uses qt5ct for theming
+* Made pip install earlier
+* Trying to fix konsave installer
+
 Version 4.1.0
 + Script now can enable nvidia systemctl services for suspension
 + Added Konsave so script can now set the Dracula theme for KDE (when selected to install of course)

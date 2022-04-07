@@ -73,7 +73,7 @@ fi
 
 if [[ "$use_graphics" == "yes" ]]; then
 	output ${YELLOW} "Installing more packages for uniform look for QT and GTK apps"
-	installYay "gtk3-nocsd-git qt5ct-kde"
+	installYay "gtk3-nocsd-git"
 
 	if [[ "$use_dracula_theme" == "yes" ]]; then
 		output ${YELLOW} "Installing main Dracula theme package"
@@ -178,10 +178,10 @@ yay --editmenu --nodiffmenu --save
 
 if [[ "$use_dracula_theme" == "yes" ]] && [[ "$desktop_env" == "kde" ]]; then
 	output ${YELLOW} "Setting Dracula Theme for KDE"
-	python -m pip install konsave
-	python -m konsave -i ${SCRIPT_DIR}/premade-configs/Dracula.knsv
+	pip install konsave
+	konsave -i ${SCRIPT_DIR}/premade-configs/Dracula.knsv
 	sleep 1
-	python -m konsave -a Dracula
+	konsave -a Dracula
 fi
 
 banner ${LIGHT_PURPLE} "SYSTEM READY FOR 3-postinstall"

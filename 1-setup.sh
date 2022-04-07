@@ -525,7 +525,7 @@ if [[ "$use_graphics" == "yes" ]]; then
 	output ${YELLOW} "====== Installing theming packages for GTK and QT to match environments ====="
 	installPac "kvantum-qt5"
 	cat <<-EOF >> /etc/environment
-	QT_QPA_PLATFORMTHEME=qt5ct
+	QT_STYLE_OVERRIDE=kvantum
 	EOF
 
 	if [[ "yes" == $(askYesNo "Would you like to install the Dracula theme?") ]]; then use_dracula_theme="yes"; fi
