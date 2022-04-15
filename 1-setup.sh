@@ -432,7 +432,13 @@ if [[ "$use_graphics" == "yes" ]]; then
 			break;;
 		W | w)
 			output ${YELLOW} "========= Installing PipeWire protocols ========="
-			installPac "alsa-utils pipewire pipewire-media-session pipewire-pulse pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad"
+			installPac "alsa-utils pipewire wireplumber pipewire-pulse pipewire-alsa gst-libav gst-plugins-ugly gst-plugins-bad"
+			if [[ "yes" == $(askYesNo "Do you want to enable PipeWire's echo-cancel module for Echo/Noise Cancellation of microphone inputs?")  ]]; then
+				output ${YELLOW} "Enabling echo-cancel module"
+				cat <<-EOF >> /etc/pipewire/pipewire-pulse.conf.d/noise-cancel.conf
+				context.modules = [{ name = libpipewire-module-echo-cancel }]
+				EOF
+			fi
 			break;;
 		*) output ${LIGHT_RED} "Invaild Input";;
 		esac
@@ -520,7 +526,7 @@ if [[ "$use_graphics" == "yes" ]]; then
 	if [[ "$use_minimal_install_mode" != "yes" ]]; then
 		#Font packs install
 		output ${YELLOW} "====== Installing font packs ======"
-		installPac "dina-font tamsyn-font bdf-unifont ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
+		installPac "dina-font tamsyn-font ttf-bitstream-vera ttf-croscore ttf-dejavu ttf-droid gnu-free-fonts ttf-ibm-plex ttf-liberation noto-fonts ttf-roboto tex-gyre-fonts ttf-ubuntu-font-family ttf-anonymous-pro ttf-cascadia-code ttf-fantasque-sans-mono ttf-fira-mono ttf-hack ttf-fira-code ttf-inconsolata ttf-jetbrains-mono ttf-monofur adobe-source-code-pro-fonts cantarell-fonts inter-font ttf-opensans gentium-plus-font ttf-junicode adobe-source-han-sans-otc-fonts adobe-source-han-serif-otc-fonts noto-fonts-cjk noto-fonts-emoji"
 
 		#Base user packages
 		output ${YELLOW} "====== Installing base user packages ====="
@@ -589,7 +595,7 @@ if [[ "$use_graphics" == "yes" ]]; then
 		K | k) # KDE
 			output ${YELLOW} "Installing KDE and basic desktop apps"
 			desktop_env="kde"
-			installPac "xorg sddm ark audiocd-kio breeze-gtk xdg-desktop-portal-kde dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools partitionmanager system-config-printer cups-pk-helper kfind plasma-workspace-wallpapers"
+			installPac "xorg sddm ark audiocd-kio breeze-gtk xdg-desktop-portal-kde dolphin dragon elisa gwenview kate kdeconnect kde-gtk-config khotkeys kinfocenter kinit kio-fuse konsole kscreen kwallet-pam kwalletmanager okular plasma-desktop plasma-disks plasma-nm plasma-pa powerdevil print-manager sddm-kcm solid spectacle xsettingsd plasma-browser-integration ksshaskpass pavucontrol-qt qalculate-qt qbittorrent filelight kdeplasma-addons quota-tools partitionmanager system-config-printer cups-pk-helper kfind plasma-workspace-wallpapers discover packagekit-qt5"
 			systemctl enable sddm
 			output ${YELLOW} "Setting SSH_ASKPASS variable to ksshaskpass for gui ssh prompts"
 			echo "SSH_ASKPASS=/usr/bin/ksshaskpass" >> /etc/environment

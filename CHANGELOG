@@ -4,7 +4,13 @@ KEY:
 * = bugfix
 ^ = enhancement/change
 
-Version 4.1.1
+Version 4.1.3
++ Added Pipewire noise cancellation module
++ Added KDE Discovery store
+- Fixed issue where fonts weren't installing because one of the packages no longer existed
+^ Replaced Pipewire media session with wireplumber
+
+Version 4.1.2
 + Added more environment variables for XDG compliance
 
 Version 4.1.1
