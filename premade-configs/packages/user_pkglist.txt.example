@@ -1,19 +1,20 @@
 # Specify packages with new lines, please check for spelling!
-keepassxc
 obs-studio
 papirus-icon-theme
 xournalpp-git
+pass
+pass-git-helper
+pass-otp
+qtpass
 xclip
 xdotool
 xorg-xprop
 xorg-xwininfo
-copyq
 syncthing
 isync
 simple-scan
 octave
 davmail
-git-credential-keepassxc
 mu
 platformio
 plexamp-appimage
@@ -21,7 +22,6 @@ latte-dock
 yubikey-manager-qt
 yubikey-personalization-gui
 pam-u2f
-steam
 protonmail-bridge
 python-black
 python-pyflakes
